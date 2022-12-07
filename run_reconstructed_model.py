@@ -87,7 +87,7 @@ def audio_to_examples(audio_samples,
     to_evaluate = []
     bad_inds = []
     step_counter = 0
-    while end_sample < len(audio_samples):
+    while end_sample <= len(audio_samples):
 
         example = audio_samples[start_sample:end_sample]
 
@@ -212,17 +212,24 @@ def process_file_stream(model,
         pass
 
     file_start_time = time.time()
+    frame_length = clip_length_sec * sr
 
     stream = librosa.stream(test_filename,
-                            block_length=clip_length_sec, # 1 second at a time
-                            frame_length=clip_length_sec*sr, # 1 second per frame
-                            hop_length=stride_sec*sr,
-                            fill_value=0.)
+                            block_length=1,               # 1 frame per block
+                            frame_length=frame_length,    # 1 second per frame
+                            hop_length=stride_sec*sr)
 
     predictions = None
     bad_inds = []
     step_counter = 0
+
     for sample in stream:
+
+        if len(sample) < frame_length:
+            # too few samples left for full frame
+
+            break
+
         step_counter += 1
         if np.max(sample)>1.1 or np.min(sample)<(-1.1):
             print("max:",np.max(sample),"min:",np.min(sample))
@@ -235,15 +242,12 @@ def process_file_stream(model,
             else:
                 for i in range(len(preds)):
                     predictions[i] = np.concatenate((predictions[i],preds[i]))
-
-                
-    step_counter -= 1 # CHECK THIS - CORRECTION FACTOR?
     
     file_elapsed_time = time.time() - file_start_time
     print("processed %.1f s of audio in %.1f s (%.1fx)" % (test_file_dur_s,file_elapsed_time,
                                                   test_file_dur_s/file_elapsed_time))
     
-    return preds, bad_inds, step_counter
+    return predictions, bad_inds, step_counter
     
 def process_file_full(model,
                          test_filename,
@@ -546,7 +550,7 @@ def run_model_on_file(audio_model,
         if not quiet:
             print("processing file: streaming from file") 
         
-    preds, bad_inds, steps = process_file_full(audio_model,
+    preds, bad_inds, steps = process_file(audio_model,
                                                test_filename,
                                                  clip_length_sec,
                                                  stride_sec,

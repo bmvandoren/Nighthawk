@@ -457,7 +457,8 @@ def run_model_on_file(audio_model,
                       test_config_fp=None,
                          stream=False,
                          threshold = 0.5,
-                     quiet=False):
+                     quiet=False,
+                     model_runner=None):
     
     if not quiet:
         print("loading taxonomy") 
@@ -539,8 +540,12 @@ def run_model_on_file(audio_model,
                             'family':subselect_family,
                             'order':subselect_order}
                 
+    if model_runner is not None:
+        process_file = model_runner
+        if not quiet:
+            print("processing file: using custom model runner")
         
-    if not stream:
+    elif not stream:
         process_file = process_file_full
         if not quiet:
             print("processing file: loading full audio file into memory") 

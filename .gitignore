@@ -1,7 +1,7 @@
 
 *.pyc
+dist/
 .ipynb_checkpoints
 .vscode/
-test_inputs/Ithaca_2021-10-03_06.00.00_Z.22050.wav
-test_inputs/Ithaca_2021-10-03_06.00.00_Z.wav
+test_inputs/Ithaca*
 test_outputs/

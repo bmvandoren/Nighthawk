@@ -1,0 +1,51 @@
+# TOML file for building tne `nighthawk` package.
+#
+# This file is modeled after a similar file in the Python packaging
+# tutorial at
+# https://packaging.python.org/en/latest/tutorials/packaging-projects/.
+#
+# To create a Python environment named `nighthawk-dev` in which to work
+# on the `nighthawk` package:
+#
+#     conda create -n nighthawk-dev python=3.10
+#     conda activate nighthawk-dev
+#     pip install build jupyter librosa~=0.9.0 pandas tensorflow~=2.11.0
+#
+# To build the `nighthawk` package, issue the following commands from
+# within the directory containing this TOML file:
+#
+#     conda activate nighthawk-dev
+#     python -m build
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nighthawk"
+version = "0.0.0"
+authors = [
+  { name="Benjamin Van Doren", email="vandoren@cornell.edu" },
+]
+description = "Nighthawk avian nocturnal flight call detector"
+# readme = "README.md"
+# license = {file = "LICENSE.txt"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = "~=3.10.0"
+dependencies = [
+    "librosa~=0.9.0",
+    "tensorflow~=2.11.0",
+    "pandas",
+    "jupyter"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/bmvandoren/nighthawk"
+"Bug Tracker" = "https://github.com/bmvandoren/nighthawk/issues"
+
+[project.scripts]
+nighthawk = "nighthawk.nighthawk:main"

@@ -12,10 +12,10 @@ import tensorflow as tf
 import run_reconstructed_model
 
 
-ROOT_DIR_PATH = Path(__file__).parent
-MODEL_DIR_PATH = ROOT_DIR_PATH / 'saved_model_with_preprocessing'
-TAXONOMY_DIR_PATH = ROOT_DIR_PATH / 'taxonomy'
-CONFIG_DIR_PATH = ROOT_DIR_PATH / 'test_config'
+PACKAGE_DIR_PATH = Path(__file__).parent
+MODEL_DIR_PATH = PACKAGE_DIR_PATH / 'saved_model_with_preprocessing'
+TAXONOMY_DIR_PATH = PACKAGE_DIR_PATH / 'taxonomy'
+CONFIG_DIR_PATH = PACKAGE_DIR_PATH / 'test_config'
 
 MODEL_SAMPLE_RATE = 22050       # Hz
 MODEL_INPUT_DURATION = 1        # seconds

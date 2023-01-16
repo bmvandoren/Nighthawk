@@ -9,7 +9,11 @@
 #
 #     conda create -n nighthawk-dev python=3.10
 #     conda activate nighthawk-dev
-#     pip install build jupyter librosa~=0.9.0 pandas tensorflow~=2.11.0
+#     pip install build jupyter librosa~=0.9.0 matplotlib pandas scikit-learn==1.0.1 tensorflow~=2.11.0
+#
+# In the `pip install` command above, the scikit-learn package version
+# number should match exactly that of the saved sigmoid probability
+# calibrators. Otherwise scikit-learn will issue a warning.
 #
 # To build the `nighthawk` package, issue the following commands from
 # within the directory containing this TOML file:

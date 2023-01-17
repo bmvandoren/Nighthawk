@@ -19,7 +19,6 @@ CONFIG_DIR_PATH = PACKAGE_DIR_PATH / 'test_config'
 
 MODEL_SAMPLE_RATE = 22050       # Hz
 MODEL_INPUT_DURATION = 1        # seconds
-INPUT_HOP_DURATION = 1          # seconds
 
 
 # TODO: Create Python package.
@@ -41,7 +40,8 @@ def main():
     print(
         f'Running detector on audio file "{input_file_path}" with '
         f'threshold {args.threshold}...')
-    detections = process_file(input_file_path, args.threshold, model, paths)
+    detections = process_file(input_file_path, args.threshold, args.hop_duration,
+                              model, paths, args.merge_overlaps, args.drop_uncertain)
 
     if args.csv_output:
         file_path = prep_for_output(
@@ -67,6 +67,12 @@ def parse_args():
         help='the detection threshold, a number in [0, 100]. Default is 50.',
         type=parse_threshold,
         default=50)
+    
+    parser.add_argument(
+        '--hop-duration',
+        help=f'the hop duration in seconds, a number in the range (0, {MODEL_INPUT_DURATION}]. Default is 0.2.',
+        type=parse_hop,
+        default=0.2)    
     
     parser.add_argument(
         '--output-dir',
@@ -99,7 +105,36 @@ def parse_args():
             '(the default).'),
         action='store_false',
         dest='raven_output')
+    
+    parser.add_argument(
+        '--merge-overlaps',
+        help=('merge overlapping detections in output '
+              '(the default).'),
+        action='store_true',
+        default=True)
 
+    parser.add_argument(
+        '--no-merge-overlaps',
+        help=(
+            'do not merge overlapping detections in output.'),
+        action='store_false',
+        dest='merge_overlaps')    
+
+    parser.add_argument(
+        '--drop-uncertain',
+        help=('apply postprocessing steps to only retain more confident predictions '
+              '(the default).'),
+        action='store_true',
+        default=True)
+
+    parser.add_argument(
+        '--no-drop-uncertain',
+        help=(
+            'do not apply postprocessing steps that retain more confident predictions.'),
+        action='store_false',
+        dest='drop_uncertain')    
+    
+    
     args = parser.parse_args()
 
     input_file_path = Path(args.input_file_path)
@@ -111,6 +146,18 @@ def parse_args():
 
     return args, input_file_path, output_dir_path
 
+def parse_hop(value):
+    
+    try:
+        hop = float(value)
+    except Exception:
+        handle_threshold_error(value)
+
+        
+    if hop <= 0 or hop > MODEL_INPUT_DURATION:
+        handle_hop_error(value)
+    
+    return hop
 
 def parse_threshold(value):
     
@@ -129,6 +176,11 @@ def handle_threshold_error(value):
     raise ArgumentTypeError(
         f'Bad detection threshold "{value}". Threshold must be '
         f'a number in the range [0, 100].')
+    
+def handle_hop_error(value):
+    raise ArgumentTypeError(
+        f'Bad hop duration "{value}". Hop duration must be '
+        f'a number in the range (0, {MODEL_INPUT_DURATION}].')    
 
 
 def load_model():
@@ -154,19 +206,23 @@ def get_configuration_file_paths():
     return paths
 
 
-def process_file(audio_file_path, threshold, model, paths):
+def process_file(audio_file_path, threshold, hop_duration, model, paths,
+                merge_overlaps, drop_uncertain):
 
     # Change threshold from percentage to fraction.
     threshold /= 100
 
     p = paths
-
+    
     return run_reconstructed_model.run_model_on_file(
         model, audio_file_path, MODEL_SAMPLE_RATE, MODEL_INPUT_DURATION,
-        INPUT_HOP_DURATION, p.species, p.groups, p.families, p.orders,
+        hop_duration, p.species, p.groups, p.families, p.orders,
         p.ebird_taxonomy, p.group_ebird_codes, p.calibrators, p.config,
         stream=False, threshold=threshold, quiet=True,
-        model_runner=get_model_predictions)
+        model_runner=get_model_predictions,
+        postprocess_drop_singles_by_tax_level=drop_uncertain,
+        postprocess_merge_overlaps=merge_overlaps,
+        postprocess_retain_only_overlaps=drop_uncertain)
 
 
 def get_model_predictions(

@@ -7,6 +7,116 @@ import os
 import json
 from itertools import compress
 
+
+def process_overlapping_detections(df,combine_type,
+                                  intervals_closed=True):
+
+    df.sort_values("start_sec", inplace=True)
+
+    # drop any with class = NA
+    df = df[~pd.isna(df['class'])]
+    
+    if len(df)==0:
+        return df
+    
+    # group detections by class
+    df_list = [d for _, d in df.groupby('class')]
+
+    # make merge_group for each df in list
+    def merge_detections(group):
+        if len(group)==1:
+            return group
+
+        which_row_max = np.argmax(group['prob'])
+
+        new_row = group.iloc[which_row_max]
+        new_row['start_sec'] = np.min(group['start_sec'])
+        new_row['end_sec'] = np.max(group['end_sec'])
+        # convert to one-row data frame
+        new_row = new_row.to_frame().T
+        # display(new_row)
+        return new_row
+    
+    def drop_single_detections(group):
+        if len(group)==1:
+            # pdb.set_trace()
+            return group.reset_index(drop=True).drop(0) # return df with no rows
+        else:
+            return group
+        
+    if combine_type=='merge':
+        combine_func = merge_detections
+    elif combine_type=='drop':
+        combine_func = drop_single_detections
+    else:
+        raise Exception("combine_type must be either 'merge' or 'drop'")
+
+    # for each class, sort by start_time and group again by whether the detections are overlapping
+    for i in range(len(df_list)):
+        df_list[i].sort_values("start_sec", inplace=True)
+        
+        if intervals_closed: # abutting intervals are merged
+            merge_group = (df_list[i]["start_sec"]>df_list[i]["end_sec"].shift()).cumsum()
+        else: # intervals must not only touch, but actually overlap
+            merge_group = (df_list[i]["start_sec"]>=df_list[i]["end_sec"].shift()).cumsum()
+
+        # now combine
+        df_list[i] = df_list[i].groupby(merge_group, group_keys=False).apply(combine_func)
+
+    if len(df['class'].unique())>1:
+        df_combine = pd.concat(df_list)
+    else:
+        if not len(df_list)>0:
+            pdb.set_trace()
+        df_combine = df_list[0]
+
+    df_combine = df_combine.sort_values('start_sec').reset_index(drop=True)
+
+    return df_combine
+
+# take a merged_df with combined taxa, and extract a particular taxonomic level (e.g. family).
+def extract_tax_from_merged(df,tax_level):
+    df_tax = df[['start_sec','end_sec','filename','path',tax_level,'prob_' + tax_level]].copy()
+    df_tax.rename(columns = {tax_level:'class', 'prob_' + tax_level:'prob'}, inplace = True)
+    return df_tax
+
+# remove detections *equal to* or shorter than length_threshold
+def remove_detections_by_duration(detect_df,length_threshold,hop_size_sec):
+    dur = detect_df['end_sec']-detect_df['start_sec']
+    detect_df = detect_df[dur>(length_threshold+hop_size_sec/2)] # add an epsilon less than hop_size_sec to account for any rounding error
+    return detect_df
+
+def merge_tax_separately(df,tax_level,combine_type,
+                         filter_clip_length=1.0,
+                         filter_hop_size=0.2,
+                         display_dfs=False):
+    
+    # take a merged_df with combined taxa, and extract a particular taxonomic level (e.g. family)
+    df_tax = extract_tax_from_merged(df,tax_level)
+    
+    if display_dfs:
+        display(df_tax)
+
+    # process overlapping detections using one of two possible options:
+    #   (1) 'merge' - merge detections accompanied by an overlapping detection of the same class; pass forward the maximum probability value
+    #   (2) 'drop' - drop any detections not accompanied by an overlapping detection of the same class
+    df_tax = process_overlapping_detections(df_tax,combine_type=combine_type)
+
+    if display_dfs:
+        display(df_tax)
+
+    # if we use the 'merge' option, remove any detections *equal to* or shorter than the original length - this will get rid of any detections that did not have any overlaps (which would by definition have a longer duration after being merged with an overlapping detection)
+    if combine_type=='merge':
+        if filter_clip_length is not None and filter_hop_size is not None:
+            df_tax = remove_detections_by_duration(df_tax,filter_clip_length,filter_hop_size)
+
+    if display_dfs:
+        display(df_tax)
+
+    return df_tax
+
+
+
 def predictions_to_dfs(predictions, 
                       n_pred_steps, 
                       bad_inds, 
@@ -398,7 +508,7 @@ def combine_taxon_detections(detect_df_dict,
     # then merge species with groups based on both family and group
     det_withgroup = det_withgroup.merge(det_spp_withgroup,how='left',on=['start_sec','end_sec','filename','path','family','group'])
 
-    df_merged = pd.concat([det_nogroup,det_withgroup]).sort_values(['filename','start_sec','order','family','group','species'])
+    merged_df = pd.concat([det_nogroup,det_withgroup]).sort_values(['filename','start_sec','order','family','group','species'])
 
 
     # def float_or_na(value):
@@ -406,22 +516,22 @@ def combine_taxon_detections(detect_df_dict,
 
     # pdb.set_trace()
 
-    # df_merged['prob_species'] = df_merged['prob_species'].replace({'<NA>':'nan'})
-    # df_merged['prob_species'].astype(float)
+    # merged_df['prob_species'] = merged_df['prob_species'].replace({'<NA>':'nan'})
+    # merged_df['prob_species'].astype(float)
 
-    df_merged['prob_species'] = pd.to_numeric(df_merged['prob_species'], errors='coerce',downcast='float')
-    df_merged['prob_group'] = pd.to_numeric(df_merged['prob_group'], errors='coerce',downcast='float')
-    df_merged['prob_family'] = pd.to_numeric(df_merged['prob_family'], errors='coerce',downcast='float')
-    df_merged['prob_order'] = pd.to_numeric(df_merged['prob_order'], errors='coerce',downcast='float')
+    merged_df['prob_species'] = pd.to_numeric(merged_df['prob_species'], errors='coerce',downcast='float')
+    merged_df['prob_group'] = pd.to_numeric(merged_df['prob_group'], errors='coerce',downcast='float')
+    merged_df['prob_family'] = pd.to_numeric(merged_df['prob_family'], errors='coerce',downcast='float')
+    merged_df['prob_order'] = pd.to_numeric(merged_df['prob_order'], errors='coerce',downcast='float')
 
-    # df_merged['prob_species'] = df_merged['prob_species'].map(float_or_na)
-    # df_merged['prob_group'] = df_merged['prob_group'].map(float_or_na)
-    # df_merged['prob_family'] = df_merged['prob_family'].map(float_or_na)
+    # merged_df['prob_species'] = merged_df['prob_species'].map(float_or_na)
+    # merged_df['prob_group'] = merged_df['prob_group'].map(float_or_na)
+    # merged_df['prob_family'] = merged_df['prob_family'].map(float_or_na)
 
-    df_merged = df_merged.drop_duplicates()
+    merged_df = merged_df.drop_duplicates()
 
     # remove detections with no confident order 
-    df_merged = df_merged[~df_merged.order.isnull()]
+    merged_df = merged_df[~merged_df.order.isnull()]
 
     def helper1(x,col_name_list):
         x = x[col_name_list].dropna()
@@ -430,16 +540,16 @@ def combine_taxon_detections(detect_df_dict,
         else:
             return(pd.NA)
 
-    if df_merged.shape[0]>0:        
+    if merged_df.shape[0]>0:        
         # convert to single class
-        df_merged['class'] = df_merged.apply(lambda x: helper1(x,['species','group','family','order']), axis=1)          
-        df_merged['prob'] = df_merged.apply(lambda x: helper1(x,['prob_species','prob_group','prob_family','prob_order']), axis=1)          
+        merged_df['class'] = merged_df.apply(lambda x: helper1(x,['species','group','family','order']), axis=1)          
+        merged_df['prob'] = merged_df.apply(lambda x: helper1(x,['prob_species','prob_group','prob_family','prob_order']), axis=1)          
     else:
-        df_merged["class"] = np.nan
-        df_merged["prob"] = np.nan
+        merged_df["class"] = np.nan
+        merged_df["prob"] = np.nan
     # pdb.set_trace()
     
-    return df_merged
+    return merged_df
 
 
 def run_model_on_file(audio_model,
@@ -458,7 +568,11 @@ def run_model_on_file(audio_model,
                          stream=False,
                          threshold = 0.5,
                      quiet=False,
-                     model_runner=None):
+                     model_runner=None,
+                     postprocess_drop_singles_by_tax_level=True,
+                     postprocess_merge_overlaps=True,
+                     postprocess_retain_only_overlaps=True # only does something if postprocess_merge_overlaps=True
+                     ):
     
     if not quiet:
         print("loading taxonomy") 
@@ -600,17 +714,69 @@ def run_model_on_file(audio_model,
     if not quiet:
         print("merging taxonomic predictions")
             
+    # merge taxonomic levels - this also enforces taxonomic consistency on the detections
     merged_df = combine_taxon_detections(detect_df_dict,
                                         family_order_map,
                                         group_family_map,
                                         species_group_map,
                                         species_family_map)
     
+    # for additional confidence, we can choose do some postprocessing
+    
+    # postprocessing option 1
+    # here, we look at each taxonomic level (species, group, etc.) in turn and 
+    # drop any detections that are not overlapping with another detection of the same class
+    if postprocess_drop_singles_by_tax_level:
+         # take merged_df (i.e. with taxonomic consistency enforced), split out by taxonomic level, drop isolated detections, and recombine
+        ct = 'drop'
+        detect_order = merge_tax_separately(merged_df,'order',combine_type=ct)
+        detect_family = merge_tax_separately(merged_df,'family',combine_type=ct)
+        detect_group = merge_tax_separately(merged_df,'group',combine_type=ct)
+        detect_species = merge_tax_separately(merged_df,'species',combine_type=ct)
+        
+        detect_df_dict = {'order':detect_order,
+                          'family':detect_family,
+                          'group':detect_group,
+                          'species':detect_species}
+                          
+        merged_df = combine_taxon_detections(detect_df_dict,
+                                        family_order_map,
+                                        group_family_map,
+                                        species_group_map,
+                                    species_family_map)
+    # the recombined merged_df should have non-duplicated taxon detections dropped, so 
+    # only more confident detections remain
+
+    
+    # postprocessing option 2
+    # here, we can choose to merge overlapping detections (or leave them as separate, possibly overlapping, windows)
+    # by default, intervals are treated as closed, so detections that simply abut (but don't technical overlap) will still be merged
+    if postprocess_merge_overlaps:
+        ct = 'merge'
+        merged_df = process_overlapping_detections(merged_df,ct)
+
+        ## not needed currently
+        # merge each of the taxonomic levels individually
+        # detect_df_dict = { key: process_overlapping_detections(df,ct) for key,df in detect_df_dict.items() }
+
+    # if we merged overlaps, should we remove detections that weren't merged?
+    # check: does this do anything if postprocess_drop_singles_by_tax_level is already True?
+    if postprocess_retain_only_overlaps:
+        if postprocess_merge_overlaps:
+            merged_df = remove_detections_by_duration(merged_df,clip_length_sec,stride_sec)
+
+            ## not needed currently
+            # calculate for each of the taxonomic levels individually
+            # detect_df_dict = { key: remove_detections_by_duration(df,clip_length_sec,stride_sec) for key,df in detect_df_dict.items() }
+
+        else:
+            if not quiet:
+                print("postprocess_merge_overlaps is False, so ignoring postprocess_retain_only_overlaps")
+
     if not quiet:
         print("done")
         
     return merged_df
-
 
                             
 def save_detections_to_file(detect_df, 

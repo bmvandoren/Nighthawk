@@ -87,8 +87,8 @@ def remove_detections_by_duration(detect_df,length_threshold,hop_size_sec):
     return detect_df
 
 def merge_tax_separately(df,tax_level,combine_type,
-                         filter_clip_length=1.0,
-                         filter_hop_size=0.2,
+                         filter_clip_length,
+                         filter_hop_size,
                          display_dfs=False):
     
     # take a merged_df with combined taxa, and extract a particular taxonomic level (e.g. family)
@@ -729,10 +729,10 @@ def run_model_on_file(audio_model,
     if postprocess_drop_singles_by_tax_level:
          # take merged_df (i.e. with taxonomic consistency enforced), split out by taxonomic level, drop isolated detections, and recombine
         ct = 'drop'
-        detect_order = merge_tax_separately(merged_df,'order',combine_type=ct)
-        detect_family = merge_tax_separately(merged_df,'family',combine_type=ct)
-        detect_group = merge_tax_separately(merged_df,'group',combine_type=ct)
-        detect_species = merge_tax_separately(merged_df,'species',combine_type=ct)
+        detect_order = merge_tax_separately(merged_df,'order',ct,clip_length_sec,stride_sec)
+        detect_family = merge_tax_separately(merged_df,'family',ct,clip_length_sec,stride_sec)
+        detect_group = merge_tax_separately(merged_df,'group',ct,clip_length_sec,stride_sec)
+        detect_species = merge_tax_separately(merged_df,'species',ct,clip_length_sec,stride_sec)
         
         detect_df_dict = {'order':detect_order,
                           'family':detect_family,

@@ -151,9 +151,8 @@ def parse_hop(value):
     try:
         hop = float(value)
     except Exception:
-        handle_threshold_error(value)
+        handle_hop_error(value)
 
-        
     if hop <= 0 or hop > MODEL_INPUT_DURATION:
         handle_hop_error(value)
     

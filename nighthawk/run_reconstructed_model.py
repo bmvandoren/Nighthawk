@@ -66,8 +66,8 @@ def process_overlapping_detections(df,combine_type,
     if len(df['class'].unique())>1:
         df_combine = pd.concat(df_list)
     else:
-        if not len(df_list)>0:
-            pdb.set_trace()
+        # if not len(df_list)>0:
+        #     pdb.set_trace()
         df_combine = df_list[0]
 
     df_combine = df_combine.sort_values('start_sec').reset_index(drop=True)
@@ -94,24 +94,24 @@ def merge_tax_separately(df,tax_level,combine_type,
     # take a merged_df with combined taxa, and extract a particular taxonomic level (e.g. family)
     df_tax = extract_tax_from_merged(df,tax_level)
     
-    if display_dfs:
-        display(df_tax)
+    # if display_dfs:
+    #     display(df_tax)
 
     # process overlapping detections using one of two possible options:
     #   (1) 'merge' - merge detections accompanied by an overlapping detection of the same class; pass forward the maximum probability value
     #   (2) 'drop' - drop any detections not accompanied by an overlapping detection of the same class
     df_tax = process_overlapping_detections(df_tax,combine_type=combine_type)
 
-    if display_dfs:
-        display(df_tax)
+    # if display_dfs:
+    #     display(df_tax)
 
     # if we use the 'merge' option, remove any detections *equal to* or shorter than the original length - this will get rid of any detections that did not have any overlaps (which would by definition have a longer duration after being merged with an overlapping detection)
     if combine_type=='merge':
         if filter_clip_length is not None and filter_hop_size is not None:
             df_tax = remove_detections_by_duration(df_tax,filter_clip_length,filter_hop_size)
 
-    if display_dfs:
-        display(df_tax)
+    # if display_dfs:
+    #     display(df_tax)
 
     return df_tax
 
@@ -591,28 +591,9 @@ def run_model_on_file(audio_model,
                         'family':families,
                         'order':orders}
 
-    # load group dictionary
-    # needs to link species to group
-    groups_map_df = pd.read_csv(group_map_fp)
-    groups_dict = dict(zip(groups_map_df.ebird_code,groups_map_df.group))
-
-    # load taxonomy
-    taxonomy_df = pd.read_csv(taxonomy_fp)
-    # remove parenthetical family stuff
-    taxonomy_df['family'] = taxonomy_df['family'].str.replace(' \(.*\)', '',regex=True)
-
-    # merge group list with taxonomy
-    # taxonomy_df['group'] = [*map(groups_dict.get,taxonomy_df['code'])]
-    taxonomy_df['group'] = taxonomy_df['code'].map(groups_dict)
-
-    # make mapping dictionaries from taxonomy
-    species_group_map = dict(zip(taxonomy_df.code, taxonomy_df.group))
-    species_family_map = dict(zip(taxonomy_df.code, taxonomy_df.family))
-    species_order_map = dict(zip(taxonomy_df.code, taxonomy_df.order))
-    group_family_map = dict(zip(taxonomy_df.group, taxonomy_df.family))
-    group_order_map = dict(zip(taxonomy_df.group, taxonomy_df.order))
-    family_order_map = dict(zip(taxonomy_df.family, taxonomy_df.order))
-    
+    (species_group_map, species_family_map, group_family_map,
+        family_order_map) = load_taxonomy(taxonomy_fp, group_map_fp)
+        
     # load test config for species subset
     if test_config_fp is not None:
         if not quiet:
@@ -714,14 +695,59 @@ def run_model_on_file(audio_model,
     if not quiet:
         print("merging taxonomic predictions")
             
+    # for additional confidence, we can choose do some postprocessing
+    merged_df = postprocess(
+        detect_df_dict, clip_length_sec, stride_sec, family_order_map,
+        group_family_map, species_group_map, species_family_map, quiet,
+        postprocess_drop_singles_by_tax_level, postprocess_merge_overlaps,
+        postprocess_retain_only_overlaps)
+    
+    if not quiet:
+        print("done")
+        
+    return merged_df
+
+
+def load_taxonomy(taxonomy_fp, group_map_fp):
+
+    # load group dictionary
+    # needs to link species to group
+    groups_map_df = pd.read_csv(group_map_fp)
+    groups_dict = dict(zip(groups_map_df.ebird_code,groups_map_df.group))
+
+    # load taxonomy
+    taxonomy_df = pd.read_csv(taxonomy_fp)
+    # remove parenthetical family stuff
+    taxonomy_df['family'] = taxonomy_df['family'].str.replace(' \(.*\)', '',regex=True)
+
+    # merge group list with taxonomy
+    # taxonomy_df['group'] = [*map(groups_dict.get,taxonomy_df['code'])]
+    taxonomy_df['group'] = taxonomy_df['code'].map(groups_dict)
+
+    # make mapping dictionaries from taxonomy
+    species_group_map = dict(zip(taxonomy_df.code, taxonomy_df.group))
+    species_family_map = dict(zip(taxonomy_df.code, taxonomy_df.family))
+    species_order_map = dict(zip(taxonomy_df.code, taxonomy_df.order))
+    group_family_map = dict(zip(taxonomy_df.group, taxonomy_df.family))
+    group_order_map = dict(zip(taxonomy_df.group, taxonomy_df.order))
+    family_order_map = dict(zip(taxonomy_df.family, taxonomy_df.order))
+
+    return (species_group_map, species_family_map, group_family_map,
+        family_order_map)
+
+
+def postprocess(
+        detect_df_dict, clip_length_sec, stride_sec, family_order_map,
+        group_family_map, species_group_map, species_family_map, quiet,
+        postprocess_drop_singles_by_tax_level, postprocess_merge_overlaps,
+        postprocess_retain_only_overlaps):
+
     # merge taxonomic levels - this also enforces taxonomic consistency on the detections
     merged_df = combine_taxon_detections(detect_df_dict,
                                         family_order_map,
                                         group_family_map,
                                         species_group_map,
                                         species_family_map)
-    
-    # for additional confidence, we can choose do some postprocessing
     
     # postprocessing option 1
     # here, we look at each taxonomic level (species, group, etc.) in turn and 
@@ -773,12 +799,9 @@ def run_model_on_file(audio_model,
             if not quiet:
                 print("postprocess_merge_overlaps is False, so ignoring postprocess_retain_only_overlaps")
 
-    if not quiet:
-        print("done")
-        
     return merged_df
 
-                            
+
 def save_detections_to_file(detect_df, 
                             test_filename,
                             out_dir):

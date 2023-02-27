@@ -37,35 +37,6 @@ def main():
         args.raven_output, output_dir_path)
     
 
-def process_file(
-        input_file_path, threshold, hop_duration, merge_overlaps,
-        drop_uncertain, csv_output, raven_output, output_dir_path):
-    
-    print('Loading detector model...')
-    model = _load_model()
-
-    print('Getting detector configuration file paths...')
-    config_file_paths = _get_configuration_file_paths()
-
-    print(
-        f'Running detector on audio file "{input_file_path}" with '
-        f'threshold {threshold}...')
-    
-    detections = _process_file(
-        input_file_path, threshold, hop_duration, model,
-        config_file_paths, merge_overlaps, drop_uncertain)
-
-    if csv_output:
-        file_path = _prep_for_output(
-            output_dir_path, input_file_path, threshold, '.csv')
-        _write_detection_csv_file(file_path, detections)
-
-    if raven_output:
-        file_path = _prep_for_output(
-            output_dir_path, input_file_path, threshold, '.txt')
-        _write_detection_selection_table_file(file_path, detections)
-
-
 def _parse_args():
     
     parser = ArgumentParser()
@@ -199,6 +170,35 @@ def _handle_hop_duration_error(value):
     raise ArgumentTypeError(
         f'Bad hop duration "{value}". Hop duration must be '
         f'a number in the range (0, {MODEL_INPUT_DURATION}].')    
+
+
+def process_file(
+        input_file_path, threshold, hop_duration, merge_overlaps,
+        drop_uncertain, csv_output, raven_output, output_dir_path):
+    
+    print('Loading detector model...')
+    model = _load_model()
+
+    print('Getting detector configuration file paths...')
+    config_file_paths = _get_configuration_file_paths()
+
+    print(
+        f'Running detector on audio file "{input_file_path}" with '
+        f'threshold {threshold}...')
+    
+    detections = _process_file(
+        input_file_path, threshold, hop_duration, model,
+        config_file_paths, merge_overlaps, drop_uncertain)
+
+    if csv_output:
+        file_path = _prep_for_output(
+            output_dir_path, input_file_path, threshold, '.csv')
+        _write_detection_csv_file(file_path, detections)
+
+    if raven_output:
+        file_path = _prep_for_output(
+            output_dir_path, input_file_path, threshold, '.txt')
+        _write_detection_selection_table_file(file_path, detections)
 
 
 def _load_model():

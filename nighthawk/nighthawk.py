@@ -173,6 +173,9 @@ def process_files(
 
     for input_file_path in input_file_paths:
 
+        # Make sure input file path is absolute for messages.
+        input_file_path = input_file_path.absolute()
+
         print(
             f'Running detector on audio file "{input_file_path}" with '
             f'threshold {threshold}...')

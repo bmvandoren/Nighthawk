@@ -26,7 +26,7 @@ MODEL_INPUT_DURATION = 1        # seconds
 
 def main():
 
-    args, input_file_path, output_dir_path = _parse_args()
+    input_file_path, args, output_dir_path = _parse_args()
 
     process_file(
         input_file_path, args.threshold, args.hop_duration,
@@ -57,38 +57,6 @@ def _parse_args():
         default=0.2)    
     
     parser.add_argument(
-        '--output-dir',
-        help=(
-            'directory in which to write output files. Default is '
-            'input file directory.'),
-        default=None)
-    
-    parser.add_argument(
-        '--csv-output',
-        help='output detections to a CSV file (the default).',
-        action='store_true',
-        default=True)
-
-    parser.add_argument(
-        '--no-csv-output',
-        help='do not output detections to a CSV file.',
-        action='store_false',
-        dest='csv_output')
-
-    parser.add_argument(
-        '--raven-output',
-        help='output detections to a Raven selection table file.',
-        action='store_true')
-
-    parser.add_argument(
-        '--no-raven-output',
-        help=(
-            'do not output detections to a Raven selection table file '
-            '(the default).'),
-        action='store_false',
-        dest='raven_output')
-    
-    parser.add_argument(
         '--merge-overlaps',
         help='merge overlapping detections in output (the default).',
         action='store_true',
@@ -116,6 +84,37 @@ def _parse_args():
         action='store_false',
         dest='drop_uncertain')    
     
+    parser.add_argument(
+        '--csv-output',
+        help='output detections to a CSV file (the default).',
+        action='store_true',
+        default=True)
+
+    parser.add_argument(
+        '--no-csv-output',
+        help='do not output detections to a CSV file.',
+        action='store_false',
+        dest='csv_output')
+
+    parser.add_argument(
+        '--raven-output',
+        help='output detections to a Raven selection table file.',
+        action='store_true')
+
+    parser.add_argument(
+        '--no-raven-output',
+        help=(
+            'do not output detections to a Raven selection table file '
+            '(the default).'),
+        action='store_false',
+        dest='raven_output')
+        
+    parser.add_argument(
+        '--output-dir',
+        help=(
+            'directory in which to write output files. Default is '
+            'input file directory.'),
+        default=None)
     
     args = parser.parse_args()
 
@@ -126,7 +125,7 @@ def _parse_args():
     else:
         output_dir_path = Path(args.output_dir)
 
-    return args, input_file_path, output_dir_path
+    return input_file_path, args, output_dir_path
 
 
 def _parse_threshold(value):

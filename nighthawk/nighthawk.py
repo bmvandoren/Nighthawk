@@ -21,9 +21,6 @@ MODEL_SAMPLE_RATE = 22050       # Hz
 MODEL_INPUT_DURATION = 1        # seconds
 
 
-# TODO: Create Python package.
-# TODO: Create Vesper detector that invokes this script.
-# TODO: Look into `librosa.load` sample value range.
 # TODO: Consider different `librosa.load` resampling algorithms.
 
 

@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 
 
-# TODO: Look into `librosa.load` sample value range.
 # TODO: Consider different `librosa.load` resampling algorithms.
 # TODO: Consider invoking model on blocks of input frames.
 

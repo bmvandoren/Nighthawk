@@ -29,33 +29,44 @@ MODEL_INPUT_DURATION = 1        # seconds
 
 def main():
 
-    args, input_file_path, output_dir_path = parse_args()
+    args, input_file_path, output_dir_path = _parse_args()
+
+    process_file(
+        input_file_path, args.threshold, args.hop_duration,
+        args.merge_overlaps, args.drop_uncertain, args.csv_output,
+        args.raven_output, output_dir_path)
+    
+
+def process_file(
+        input_file_path, threshold, hop_duration, merge_overlaps,
+        drop_uncertain, csv_output, raven_output, output_dir_path):
     
     print('Loading detector model...')
-    model = load_model()
+    model = _load_model()
 
     print('Getting detector configuration file paths...')
-    paths = get_configuration_file_paths()
+    config_file_paths = _get_configuration_file_paths()
 
     print(
         f'Running detector on audio file "{input_file_path}" with '
-        f'threshold {args.threshold}...')
-    detections = process_file(
-        input_file_path, args.threshold, args.hop_duration, model, paths,
-        args.merge_overlaps, args.drop_uncertain)
+        f'threshold {threshold}...')
+    
+    detections = _process_file(
+        input_file_path, threshold, hop_duration, model,
+        config_file_paths, merge_overlaps, drop_uncertain)
 
-    if args.csv_output:
-        file_path = prep_for_output(
-            output_dir_path, input_file_path, args.threshold, '.csv')
-        write_detection_csv_file(file_path, detections)
+    if csv_output:
+        file_path = _prep_for_output(
+            output_dir_path, input_file_path, threshold, '.csv')
+        _write_detection_csv_file(file_path, detections)
 
-    if args.raven_output:
-        file_path = prep_for_output(
-            output_dir_path, input_file_path, args.threshold, '.txt')
-        write_detection_selection_table_file(file_path, detections)
+    if raven_output:
+        file_path = _prep_for_output(
+            output_dir_path, input_file_path, threshold, '.txt')
+        _write_detection_selection_table_file(file_path, detections)
 
 
-def parse_args():
+def _parse_args():
     
     parser = ArgumentParser()
     
@@ -66,7 +77,7 @@ def parse_args():
     parser.add_argument(
         '--threshold',
         help='the detection threshold, a number in [0, 100]. Default is 50.',
-        type=parse_threshold,
+        type=_parse_threshold,
         default=50)
     
     parser.add_argument(
@@ -74,7 +85,7 @@ def parse_args():
         help=(
             f'the hop duration in seconds, a number in the range '
             f'(0, {MODEL_INPUT_DURATION}]. Default is 0.2.'),
-        type=parse_hop,
+        type=_parse_hop_duration,
         default=0.2)    
     
     parser.add_argument(
@@ -151,49 +162,52 @@ def parse_args():
 
     return args, input_file_path, output_dir_path
 
-def parse_hop(value):
-    
-    try:
-        hop = float(value)
-    except Exception:
-        handle_hop_error(value)
 
-    if hop <= 0 or hop > MODEL_INPUT_DURATION:
-        handle_hop_error(value)
-    
-    return hop
-
-def parse_threshold(value):
+def _parse_threshold(value):
     
     try:
         threshold = float(value)
     except Exception:
-        handle_threshold_error(value)
+        _handle_threshold_error(value)
     
     if threshold < 0 or threshold > 100:
-        handle_threshold_error(value)
+        _handle_threshold_error(value)
     
     return threshold
     
     
-def handle_threshold_error(value):
+def _handle_threshold_error(value):
     raise ArgumentTypeError(
         f'Bad detection threshold "{value}". Threshold must be '
         f'a number in the range [0, 100].')
     
-def handle_hop_error(value):
+
+def _parse_hop_duration(value):
+    
+    try:
+        hop = float(value)
+    except Exception:
+        _handle_hop_duration_error(value)
+
+    if hop <= 0 or hop > MODEL_INPUT_DURATION:
+        _handle_hop_duration_error(value)
+    
+    return hop
+
+
+def _handle_hop_duration_error(value):
     raise ArgumentTypeError(
         f'Bad hop duration "{value}". Hop duration must be '
         f'a number in the range (0, {MODEL_INPUT_DURATION}].')    
 
 
-def load_model():
+def _load_model():
     return tf.saved_model.load(MODEL_DIR_PATH)
 
 
-def get_configuration_file_paths():
+def _get_configuration_file_paths():
 
-    paths = Bunch()
+    paths = _Bunch()
 
     taxonomy = TAXONOMY_DIR_PATH
     paths.species =  taxonomy / 'species_select_v5.txt'
@@ -210,8 +224,9 @@ def get_configuration_file_paths():
     return paths
 
 
-def process_file(audio_file_path, threshold, hop_duration, model, paths,
-                merge_overlaps, drop_uncertain):
+def _process_file(
+        audio_file_path, threshold, hop_duration, model, paths,
+        merge_overlaps, drop_uncertain):
 
     # Change threshold from percentage to fraction.
     threshold /= 100
@@ -223,13 +238,13 @@ def process_file(audio_file_path, threshold, hop_duration, model, paths,
         hop_duration, p.species, p.groups, p.families, p.orders,
         p.ebird_taxonomy, p.group_ebird_codes, p.calibrators, p.config,
         stream=False, threshold=threshold, quiet=True,
-        model_runner=get_model_predictions,
+        model_runner=_get_model_predictions,
         postprocess_drop_singles_by_tax_level=drop_uncertain,
         postprocess_merge_overlaps=merge_overlaps,
         postprocess_retain_only_overlaps=drop_uncertain)
 
 
-def get_model_predictions(
+def _get_model_predictions(
         model, file_path, input_dur, hop_dur, target_sr=22050):
     
     start_time = time.time()
@@ -240,7 +255,7 @@ def get_model_predictions(
     # is a list of lists of four tensors.
     predictions = [
         model(samples) for samples in
-        generate_model_inputs(file_path, input_dur, hop_dur, target_sr)]
+        _generate_model_inputs(file_path, input_dur, hop_dur, target_sr)]
 
     # Put order, family, group and species logit tensors into their
     # own two-dimensional NumPy arrays, squeezing out the first tensor
@@ -251,13 +266,13 @@ def get_model_predictions(
     predictions = [np.squeeze(np.array(p), axis=1) for p in zip(*predictions)]
 
     elapsed_time = time.time() - start_time
-    report_processing_speed(file_path, elapsed_time)
+    _report_processing_speed(file_path, elapsed_time)
 
     input_count = len(predictions[0])
     return predictions, [], input_count
 
 
-def generate_model_inputs(file_path, input_dur, hop_dur, target_sr=22050):
+def _generate_model_inputs(file_path, input_dur, hop_dur, target_sr=22050):
 
     file_dur = librosa.get_duration(filename=file_path)
 
@@ -287,7 +302,7 @@ def generate_model_inputs(file_path, input_dur, hop_dur, target_sr=22050):
         load_offset += load_hop_dur
 
 
-def report_processing_speed(file_path, elapsed_time):
+def _report_processing_speed(file_path, elapsed_time):
     file_dur = librosa.get_duration(filename=file_path)
     rate = file_dur / elapsed_time
     print(
@@ -295,7 +310,7 @@ def report_processing_speed(file_path, elapsed_time):
         f'seconds, {rate:.1f} times faster than real time.')
 
 
-def prep_for_output(
+def _prep_for_output(
         output_dir_path, input_file_path, threshold, file_name_extension):
 
     # Get output file path.
@@ -311,11 +326,11 @@ def prep_for_output(
     return file_path
 
 
-def write_detection_csv_file(file_path, detections):
+def _write_detection_csv_file(file_path, detections):
     detections.to_csv(file_path, index=False, na_rep='')
 
 
-def write_detection_selection_table_file(file_path, detections):
+def _write_detection_selection_table_file(file_path, detections):
 
     # Rename certain dataframe columns for Raven.
     columns = {
@@ -328,7 +343,7 @@ def write_detection_selection_table_file(file_path, detections):
     selections.to_csv(file_path, index=False, na_rep='', sep ='\t')
 
 
-class Bunch:
+class _Bunch:
     pass
 
 

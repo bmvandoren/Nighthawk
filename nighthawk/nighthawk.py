@@ -42,7 +42,7 @@ def _parse_args():
         'input_file_paths',
         help='paths of audio files on which to run the detector.',
         type=Path,
-        nargs='*')
+        nargs='+')
     
     parser.add_argument(
         '--threshold',

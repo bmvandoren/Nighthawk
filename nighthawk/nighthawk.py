@@ -68,19 +68,19 @@ def _parse_args():
     
     parser.add_argument(
         '--csv-output',
-        help=('output detections to a CSV file (the default).'),
+        help='output detections to a CSV file (the default).',
         action='store_true',
         default=True)
 
     parser.add_argument(
         '--no-csv-output',
-        help=('do not output detections to a CSV file.'),
+        help='do not output detections to a CSV file.',
         action='store_false',
         dest='csv_output')
 
     parser.add_argument(
         '--raven-output',
-        help=('output detections to a Raven selection table file.'),
+        help='output detections to a Raven selection table file.',
         action='store_true')
 
     parser.add_argument(
@@ -93,15 +93,13 @@ def _parse_args():
     
     parser.add_argument(
         '--merge-overlaps',
-        help=('merge overlapping detections in output '
-              '(the default).'),
+        help='merge overlapping detections in output (the default).',
         action='store_true',
         default=True)
 
     parser.add_argument(
         '--no-merge-overlaps',
-        help=(
-            'do not merge overlapping detections in output.'),
+        help='do not merge overlapping detections in output.',
         action='store_false',
         dest='merge_overlaps')    
 

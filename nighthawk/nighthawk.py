@@ -26,12 +26,12 @@ MODEL_INPUT_DURATION = 1        # seconds
 
 def main():
 
-    input_file_path, args, output_dir_path = _parse_args()
+    args = _parse_args()
 
-    process_file(
-        input_file_path, args.threshold, args.hop_duration,
+    process_files(
+        args.input_file_paths, args.threshold, args.hop_duration,
         args.merge_overlaps, args.drop_uncertain, args.csv_output,
-        args.raven_output, output_dir_path)
+        args.raven_output, args.output_dir_path)
     
 
 def _parse_args():
@@ -39,8 +39,10 @@ def _parse_args():
     parser = ArgumentParser()
     
     parser.add_argument(
-        'input_file_path',
-        help='path of audio file on which to run the detector.')
+        'input_file_paths',
+        help='paths of audio files on which to run the detector.',
+        type=Path,
+        nargs='*')
     
     parser.add_argument(
         '--threshold',
@@ -114,18 +116,11 @@ def _parse_args():
         help=(
             'directory in which to write output files. Default is '
             'input file directory.'),
+        type=Path,
+        dest='output_dir_path',
         default=None)
     
-    args = parser.parse_args()
-
-    input_file_path = Path(args.input_file_path)
-
-    if args.output_dir is None:
-        output_dir_path = input_file_path.parent
-    else:
-        output_dir_path = Path(args.output_dir)
-
-    return input_file_path, args, output_dir_path
+    return parser.parse_args()
 
 
 def _parse_threshold(value):
@@ -166,8 +161,8 @@ def _handle_hop_duration_error(value):
         f'a number in the range (0, {MODEL_INPUT_DURATION}].')    
 
 
-def process_file(
-        input_file_path, threshold, hop_duration, merge_overlaps,
+def process_files(
+        input_file_paths, threshold, hop_duration, merge_overlaps,
         drop_uncertain, csv_output, raven_output, output_dir_path):
     
     print('Loading detector model...')
@@ -176,23 +171,25 @@ def process_file(
     print('Getting detector configuration file paths...')
     config_file_paths = _get_configuration_file_paths()
 
-    print(
-        f'Running detector on audio file "{input_file_path}" with '
-        f'threshold {threshold}...')
-    
-    detections = _process_file(
-        input_file_path, threshold, hop_duration, model,
-        config_file_paths, merge_overlaps, drop_uncertain)
+    for input_file_path in input_file_paths:
 
-    if csv_output:
-        file_path = _prep_for_output(
-            output_dir_path, input_file_path, threshold, '.csv')
-        _write_detection_csv_file(file_path, detections)
+        print(
+            f'Running detector on audio file "{input_file_path}" with '
+            f'threshold {threshold}...')
+        
+        detections = _process_file(
+            input_file_path, threshold, hop_duration, model,
+            config_file_paths, merge_overlaps, drop_uncertain)
 
-    if raven_output:
-        file_path = _prep_for_output(
-            output_dir_path, input_file_path, threshold, '.txt')
-        _write_detection_selection_table_file(file_path, detections)
+        if csv_output:
+            file_path = _prep_for_output(
+                output_dir_path, input_file_path, threshold, '.csv')
+            _write_detection_csv_file(file_path, detections)
+
+        if raven_output:
+            file_path = _prep_for_output(
+                output_dir_path, input_file_path, threshold, '.txt')
+            _write_detection_selection_table_file(file_path, detections)
 
 
 def _load_model():
@@ -308,6 +305,8 @@ def _prep_for_output(
         output_dir_path, input_file_path, threshold, file_name_extension):
 
     # Get output file path.
+    if output_dir_path is None:
+        output_dir_path = input_file_path.parent
     threshold_text = '' if threshold is None else f'_{int(threshold)}'
     file_name = input_file_path.stem + threshold_text + file_name_extension
     file_path = output_dir_path / file_name

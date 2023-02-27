@@ -40,8 +40,9 @@ def main():
     print(
         f'Running detector on audio file "{input_file_path}" with '
         f'threshold {args.threshold}...')
-    detections = process_file(input_file_path, args.threshold, args.hop_duration,
-                              model, paths, args.merge_overlaps, args.drop_uncertain)
+    detections = process_file(
+        input_file_path, args.threshold, args.hop_duration, model, paths,
+        args.merge_overlaps, args.drop_uncertain)
 
     if args.csv_output:
         file_path = prep_for_output(
@@ -70,7 +71,9 @@ def parse_args():
     
     parser.add_argument(
         '--hop-duration',
-        help=f'the hop duration in seconds, a number in the range (0, {MODEL_INPUT_DURATION}]. Default is 0.2.',
+        help=(
+            f'the hop duration in seconds, a number in the range '
+            f'(0, {MODEL_INPUT_DURATION}]. Default is 0.2.'),
         type=parse_hop,
         default=0.2)    
     
@@ -122,15 +125,17 @@ def parse_args():
 
     parser.add_argument(
         '--drop-uncertain',
-        help=('apply postprocessing steps to only retain more confident predictions '
-              '(the default).'),
+        help=(
+            'apply postprocessing steps to only retain more confident '
+            'predictions (the default).'),
         action='store_true',
         default=True)
 
     parser.add_argument(
         '--no-drop-uncertain',
         help=(
-            'do not apply postprocessing steps that retain more confident predictions.'),
+            'do not apply postprocessing steps that retain more confident '
+            'predictions.'),
         action='store_false',
         dest='drop_uncertain')    
     

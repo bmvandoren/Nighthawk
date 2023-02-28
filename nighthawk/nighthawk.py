@@ -46,7 +46,7 @@ def _parse_args():
     
     parser.add_argument(
         '--threshold',
-        help='the detection threshold, a number in [0, 100]. Default is 50.',
+        help='the detection threshold, a number in [0, 100]. (default: 50)',
         type=_parse_threshold,
         default=50)
     
@@ -54,7 +54,7 @@ def _parse_args():
         '--hop-duration',
         help=(
             f'the hop duration in seconds, a number in the range '
-            f'(0, {MODEL_INPUT_DURATION}]. Default is 0.2.'),
+            f'(0, {MODEL_INPUT_DURATION}]. (default: 0.2)'),
         type=_parse_hop_duration,
         default=0.2)    
     

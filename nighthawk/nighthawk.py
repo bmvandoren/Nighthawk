@@ -7,7 +7,6 @@ import time
 
 import librosa
 import numpy as np
-import tensorflow as tf
 
 import run_reconstructed_model
 
@@ -169,6 +168,13 @@ def process_files(
 
 
 def _load_model():
+
+    # This is here instead of near the top of this file since it is
+    # rather slow. Putting it here makes the script more responsive
+    # if, say, the user just wants to display help or accidentally
+    # specifies an invalid argument.
+    import tensorflow as tf
+
     return tf.saved_model.load(MODEL_DIR_PATH)
 
 

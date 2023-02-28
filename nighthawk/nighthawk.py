@@ -1,7 +1,7 @@
 """Script that runs Nighthawk NFC detector on one audio file."""
 
 
-from argparse import ArgumentParser, ArgumentTypeError
+from argparse import ArgumentParser, ArgumentTypeError, BooleanOptionalAction
 from pathlib import Path
 import time
 
@@ -60,57 +60,30 @@ def _parse_args():
     
     parser.add_argument(
         '--merge-overlaps',
-        help='merge overlapping detections in output (the default).',
-        action='store_true',
+        help='merge overlapping detections in output.',
+        action=BooleanOptionalAction,
         default=True)
-
-    parser.add_argument(
-        '--no-merge-overlaps',
-        help='do not merge overlapping detections in output.',
-        action='store_false',
-        dest='merge_overlaps')    
 
     parser.add_argument(
         '--drop-uncertain',
         help=(
             'apply postprocessing steps to only retain more confident '
-            'predictions (the default).'),
-        action='store_true',
+            'predictions.'),
+        action=BooleanOptionalAction,
         default=True)
 
-    parser.add_argument(
-        '--no-drop-uncertain',
-        help=(
-            'do not apply postprocessing steps that retain more confident '
-            'predictions.'),
-        action='store_false',
-        dest='drop_uncertain')    
-    
     parser.add_argument(
         '--csv-output',
-        help='output detections to a CSV file (the default).',
-        action='store_true',
+        help='output detections to a CSV file.',
+        action=BooleanOptionalAction,
         default=True)
-
-    parser.add_argument(
-        '--no-csv-output',
-        help='do not output detections to a CSV file.',
-        action='store_false',
-        dest='csv_output')
 
     parser.add_argument(
         '--raven-output',
         help='output detections to a Raven selection table file.',
-        action='store_true')
+        action=BooleanOptionalAction,
+        default=False)
 
-    parser.add_argument(
-        '--no-raven-output',
-        help=(
-            'do not output detections to a Raven selection table file '
-            '(the default).'),
-        action='store_false',
-        dest='raven_output')
-        
     parser.add_argument(
         '--output-dir',
         help=(

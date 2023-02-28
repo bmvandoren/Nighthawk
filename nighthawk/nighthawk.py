@@ -11,16 +11,16 @@ import numpy as np
 import run_reconstructed_model
 
 
-PACKAGE_DIR_PATH = Path(__file__).parent
-MODEL_DIR_PATH = PACKAGE_DIR_PATH / 'saved_model_with_preprocessing'
-TAXONOMY_DIR_PATH = PACKAGE_DIR_PATH / 'taxonomy'
-CONFIG_DIR_PATH = PACKAGE_DIR_PATH / 'test_config'
+_PACKAGE_DIR_PATH = Path(__file__).parent
+_MODEL_DIR_PATH = _PACKAGE_DIR_PATH / 'saved_model_with_preprocessing'
+_TAXONOMY_DIR_PATH = _PACKAGE_DIR_PATH / 'taxonomy'
+_CONFIG_DIR_PATH = _PACKAGE_DIR_PATH / 'test_config'
 
-MODEL_SAMPLE_RATE = 22050       # Hz
-MODEL_INPUT_DURATION = 1        # seconds
+_MODEL_SAMPLE_RATE = 22050         # Hz
+_MODEL_INPUT_DURATION = 1          # seconds
 
-_DEFAULT_HOP_DURATION = .2
-_DEFAULT_THRESHOLD = 50
+_DEFAULT_HOP_DURATION = .2         # seconds
+_DEFAULT_THRESHOLD = 50            # percent
 _DEFAULT_MERGE_OVERLAPS = True
 _DEFAULT_DROP_UNCERTAIN = True
 _DEFAULT_CSV_OUTPUT = True
@@ -55,7 +55,7 @@ def _parse_args():
         '--hop-duration',
         help=(
             f'the hop duration in seconds, a number in the range '
-            f'(0, {MODEL_INPUT_DURATION}]. (default: 0.2)'),
+            f'(0, {_MODEL_INPUT_DURATION}]. (default: 0.2)'),
         type=_parse_hop_duration,
         default=_DEFAULT_HOP_DURATION)    
     
@@ -108,7 +108,7 @@ def _parse_hop_duration(value):
     except Exception:
         _handle_hop_duration_error(value)
 
-    if hop <= 0 or hop > MODEL_INPUT_DURATION:
+    if hop <= 0 or hop > _MODEL_INPUT_DURATION:
         _handle_hop_duration_error(value)
     
     return hop
@@ -117,7 +117,7 @@ def _parse_hop_duration(value):
 def _handle_hop_duration_error(value):
     raise ArgumentTypeError(
         f'Bad hop duration "{value}". Hop duration must be '
-        f'a number in the range (0, {MODEL_INPUT_DURATION}].')    
+        f'a number in the range (0, {_MODEL_INPUT_DURATION}].')    
 
 
 def _parse_threshold(value):
@@ -184,14 +184,14 @@ def _load_model():
     # specifies an invalid argument.
     import tensorflow as tf
 
-    return tf.saved_model.load(MODEL_DIR_PATH)
+    return tf.saved_model.load(_MODEL_DIR_PATH)
 
 
 def _get_configuration_file_paths():
 
     paths = _Bunch()
 
-    taxonomy = TAXONOMY_DIR_PATH
+    taxonomy = _TAXONOMY_DIR_PATH
     paths.species =  taxonomy / 'species_select_v5.txt'
     paths.groups =  taxonomy / 'groups_select_v5.txt'
     paths.families =  taxonomy / 'families_select_v5.txt'
@@ -199,7 +199,7 @@ def _get_configuration_file_paths():
     paths.ebird_taxonomy = taxonomy / 'ebird_taxonomy.csv'
     paths.group_ebird_codes = taxonomy / 'groups_ebird_codes.csv'
  
-    config = CONFIG_DIR_PATH
+    config = _CONFIG_DIR_PATH
     paths.config = config / 'test_config.json'
     paths.calibrators = config / 'calibrators_dict.obj'
 
@@ -216,7 +216,7 @@ def _process_file(
     threshold /= 100
 
     return run_reconstructed_model.run_model_on_file(
-        model, audio_file_path, MODEL_SAMPLE_RATE, MODEL_INPUT_DURATION,
+        model, audio_file_path, _MODEL_SAMPLE_RATE, _MODEL_INPUT_DURATION,
         hop_duration, p.species, p.groups, p.families, p.orders,
         p.ebird_taxonomy, p.group_ebird_codes, p.calibrators, p.config,
         stream=False, threshold=threshold, quiet=True,

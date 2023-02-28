@@ -1,4 +1,4 @@
-"""Script that runs Nighthawk NFC detector on one audio file."""
+"""Script that runs the Nighthawk NFC detector on specified audio files."""
 
 
 from argparse import ArgumentParser, ArgumentTypeError, BooleanOptionalAction

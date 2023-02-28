@@ -159,12 +159,14 @@ def process_files(
 
         if csv_output:
             file_path = _prep_for_output(
-                output_dir_path, input_file_path, threshold, '.csv')
+                output_dir_path, input_file_path, hop_duration, threshold,
+                merge_overlaps, drop_uncertain, '.csv')
             _write_detection_csv_file(file_path, detections)
 
         if raven_output:
             file_path = _prep_for_output(
-                output_dir_path, input_file_path, threshold, '.txt')
+                output_dir_path, input_file_path, hop_duration, threshold,
+                merge_overlaps, drop_uncertain, '.txt')
             _write_detection_selection_table_file(file_path, detections)
 
 
@@ -278,13 +280,15 @@ def _report_processing_speed(file_path, elapsed_time):
 
 
 def _prep_for_output(
-        output_dir_path, input_file_path, threshold, file_name_extension):
+        output_dir_path, input_file_path, hop_duration, threshold,
+        merge_overlaps, drop_uncertain, file_name_extension):
 
     # Get output file path.
     if output_dir_path is None:
         output_dir_path = input_file_path.parent
-    threshold_text = '' if threshold is None else f'_{int(threshold)}'
-    file_name = input_file_path.stem + threshold_text + file_name_extension
+    file_name = (
+        f'{input_file_path.stem}_{hop_duration:.2f}_{threshold:.1f}_'
+        f'{merge_overlaps:d}_{drop_uncertain:d}{file_name_extension}')
     file_path = output_dir_path / file_name
 
     print(f'Writing output file "{file_path}"...')

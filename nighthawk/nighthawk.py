@@ -60,15 +60,13 @@ def _parse_args():
     
     parser.add_argument(
         '--merge-overlaps',
-        help='merge overlapping detections in output.',
+        help='merge overlapping detections.',
         action=BooleanOptionalAction,
         default=True)
 
     parser.add_argument(
         '--drop-uncertain',
-        help=(
-            'apply postprocessing steps to only retain more confident '
-            'predictions.'),
+        help='apply postprocessing steps to drop less certain detections.',
         action=BooleanOptionalAction,
         default=True)
 
@@ -87,8 +85,8 @@ def _parse_args():
     parser.add_argument(
         '--output-dir',
         help=(
-            'directory in which to write output files. Default is '
-            'input file directory.'),
+            'directory in which to write output files. (default: input '
+            'file directories)'),
         type=Path,
         dest='output_dir_path',
         default=None)

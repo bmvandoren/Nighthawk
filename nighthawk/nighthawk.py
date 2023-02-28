@@ -29,7 +29,7 @@ def main():
     args = _parse_args()
 
     process_files(
-        args.input_file_paths, args.threshold, args.hop_duration,
+        args.input_file_paths, args.hop_duration, args.threshold,
         args.merge_overlaps, args.drop_uncertain, args.csv_output,
         args.raven_output, args.output_dir_path)
     
@@ -45,18 +45,18 @@ def _parse_args():
         nargs='+')
     
     parser.add_argument(
-        '--threshold',
-        help='the detection threshold, a number in [0, 100]. (default: 50)',
-        type=_parse_threshold,
-        default=50)
-    
-    parser.add_argument(
         '--hop-duration',
         help=(
             f'the hop duration in seconds, a number in the range '
             f'(0, {MODEL_INPUT_DURATION}]. (default: 0.2)'),
         type=_parse_hop_duration,
         default=0.2)    
+    
+    parser.add_argument(
+        '--threshold',
+        help='the detection threshold, a number in [0, 100]. (default: 50)',
+        type=_parse_threshold,
+        default=50)
     
     parser.add_argument(
         '--merge-overlaps',
@@ -96,25 +96,6 @@ def _parse_args():
     return parser.parse_args()
 
 
-def _parse_threshold(value):
-    
-    try:
-        threshold = float(value)
-    except Exception:
-        _handle_threshold_error(value)
-    
-    if threshold < 0 or threshold > 100:
-        _handle_threshold_error(value)
-    
-    return threshold
-    
-    
-def _handle_threshold_error(value):
-    raise ArgumentTypeError(
-        f'Bad detection threshold "{value}". Threshold must be '
-        f'a number in the range [0, 100].')
-    
-
 def _parse_hop_duration(value):
     
     try:
@@ -134,8 +115,27 @@ def _handle_hop_duration_error(value):
         f'a number in the range (0, {MODEL_INPUT_DURATION}].')    
 
 
+def _parse_threshold(value):
+    
+    try:
+        threshold = float(value)
+    except Exception:
+        _handle_threshold_error(value)
+    
+    if threshold < 0 or threshold > 100:
+        _handle_threshold_error(value)
+    
+    return threshold
+    
+    
+def _handle_threshold_error(value):
+    raise ArgumentTypeError(
+        f'Bad detection threshold "{value}". Threshold must be '
+        f'a number in the range [0, 100].')
+    
+
 def process_files(
-        input_file_paths, threshold, hop_duration, merge_overlaps,
+        input_file_paths, hop_duration, threshold, merge_overlaps,
         drop_uncertain, csv_output, raven_output, output_dir_path):
     
     print('Loading detector model...')
@@ -154,8 +154,8 @@ def process_files(
             f'threshold {threshold}...')
         
         detections = _process_file(
-            input_file_path, threshold, hop_duration, model,
-            config_file_paths, merge_overlaps, drop_uncertain)
+            input_file_path, model, config_file_paths, hop_duration,
+            threshold, merge_overlaps, drop_uncertain)
 
         if csv_output:
             file_path = _prep_for_output(
@@ -192,14 +192,14 @@ def _get_configuration_file_paths():
 
 
 def _process_file(
-        audio_file_path, threshold, hop_duration, model, paths,
+        audio_file_path, model, paths, hop_duration, threshold,
         merge_overlaps, drop_uncertain):
-
-    # Change threshold from percentage to fraction.
-    threshold /= 100
 
     p = paths
     
+    # Change threshold from percentage to fraction.
+    threshold /= 100
+
     return run_reconstructed_model.run_model_on_file(
         model, audio_file_path, MODEL_SAMPLE_RATE, MODEL_INPUT_DURATION,
         hop_duration, p.species, p.groups, p.families, p.orders,

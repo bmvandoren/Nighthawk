@@ -19,6 +19,14 @@ CONFIG_DIR_PATH = PACKAGE_DIR_PATH / 'test_config'
 MODEL_SAMPLE_RATE = 22050       # Hz
 MODEL_INPUT_DURATION = 1        # seconds
 
+_DEFAULT_HOP_DURATION = .2
+_DEFAULT_THRESHOLD = 50
+_DEFAULT_MERGE_OVERLAPS = True
+_DEFAULT_DROP_UNCERTAIN = True
+_DEFAULT_CSV_OUTPUT = True
+_DEFAULT_RAVEN_OUTPUT = False
+_DEFAULT_OUTPUT_DIR_PATH = None
+
 
 # TODO: Consider different `librosa.load` resampling algorithms.
 
@@ -49,37 +57,37 @@ def _parse_args():
             f'the hop duration in seconds, a number in the range '
             f'(0, {MODEL_INPUT_DURATION}]. (default: 0.2)'),
         type=_parse_hop_duration,
-        default=0.2)    
+        default=_DEFAULT_HOP_DURATION)    
     
     parser.add_argument(
         '--threshold',
         help='the detection threshold, a number in [0, 100]. (default: 50)',
         type=_parse_threshold,
-        default=50)
+        default=_DEFAULT_THRESHOLD)
     
     parser.add_argument(
         '--merge-overlaps',
         help='merge overlapping detections.',
         action=BooleanOptionalAction,
-        default=True)
+        default=_DEFAULT_MERGE_OVERLAPS)
 
     parser.add_argument(
         '--drop-uncertain',
         help='apply postprocessing steps to drop less certain detections.',
         action=BooleanOptionalAction,
-        default=True)
+        default=_DEFAULT_DROP_UNCERTAIN)
 
     parser.add_argument(
         '--csv-output',
         help='output detections to a CSV file.',
         action=BooleanOptionalAction,
-        default=True)
+        default=_DEFAULT_CSV_OUTPUT)
 
     parser.add_argument(
         '--raven-output',
         help='output detections to a Raven selection table file.',
         action=BooleanOptionalAction,
-        default=False)
+        default=_DEFAULT_RAVEN_OUTPUT)
 
     parser.add_argument(
         '--output-dir',
@@ -88,7 +96,7 @@ def _parse_args():
             'file directories)'),
         type=Path,
         dest='output_dir_path',
-        default=None)
+        default=_DEFAULT_OUTPUT_DIR_PATH)
     
     return parser.parse_args()
 
@@ -132,8 +140,11 @@ def _handle_threshold_error(value):
     
 
 def process_files(
-        input_file_paths, hop_duration, threshold, merge_overlaps,
-        drop_uncertain, csv_output, raven_output, output_dir_path):
+        input_file_paths, hop_duration=_DEFAULT_HOP_DURATION,
+        threshold=_DEFAULT_THRESHOLD, merge_overlaps=_DEFAULT_MERGE_OVERLAPS,
+        drop_uncertain=_DEFAULT_DROP_UNCERTAIN, csv_output=_DEFAULT_CSV_OUTPUT,
+        raven_output=_DEFAULT_RAVEN_OUTPUT,
+        output_dir_path=_DEFAULT_OUTPUT_DIR_PATH):
     
     print('Loading detector model...')
     model = _load_model()

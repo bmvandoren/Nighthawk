@@ -146,9 +146,7 @@ def process_files(
         # Make sure input file path is absolute for messages.
         input_file_path = input_file_path.absolute()
 
-        print(
-            f'Running detector on audio file "{input_file_path}" with '
-            f'threshold {threshold}...')
+        print(f'Running detector on audio file "{input_file_path}"...')
         
         detections = _process_file(
             input_file_path, model, config_file_paths, hop_duration,

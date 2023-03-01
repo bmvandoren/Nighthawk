@@ -7,9 +7,6 @@ from pathlib import Path
 import nighthawk as nh
 
 
-# TODO: Consider different `librosa.load` resampling algorithms.
-
-
 def main():
 
     args = _parse_args()

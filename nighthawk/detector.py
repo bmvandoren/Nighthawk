@@ -55,16 +55,14 @@ def process_files(
             threshold, merge_overlaps, drop_uncertain)
 
         if csv_output:
-            file_path = _prep_for_output(
-                output_dir_path, input_file_path, hop_duration, threshold,
-                merge_overlaps, drop_uncertain, '.csv')
-            _write_detection_csv_file(file_path, detections)
+            output_file_path = _prep_for_output(
+                input_file_path, output_dir_path, '.csv')
+            _write_detection_csv_file(output_file_path, detections)
 
         if raven_output:
-            file_path = _prep_for_output(
-                output_dir_path, input_file_path, hop_duration, threshold,
-                merge_overlaps, drop_uncertain, '.txt')
-            _write_detection_selection_table_file(file_path, detections)
+            output_file_path = _prep_for_output(
+                input_file_path, output_dir_path, '.txt')
+            _write_detection_selection_table_file(output_file_path, detections)
 
 
 def _load_model():
@@ -183,16 +181,12 @@ def _report_processing_speed(file_path, elapsed_time):
         f'seconds, {rate:.1f} times faster than real time.')
 
 
-def _prep_for_output(
-        output_dir_path, input_file_path, hop_duration, threshold,
-        merge_overlaps, drop_uncertain, file_name_extension):
+def _prep_for_output(input_file_path, output_dir_path, file_name_suffix):
 
     # Get output file path.
     if output_dir_path is None:
         output_dir_path = input_file_path.parent
-    file_name = (
-        f'{input_file_path.stem}_{hop_duration:.2f}_{threshold:.1f}_'
-        f'{merge_overlaps:d}_{drop_uncertain:d}{file_name_extension}')
+    file_name = f'{input_file_path.stem}_detections{file_name_suffix}'
     file_path = output_dir_path / file_name
 
     print(f'Writing output file "{file_path}"...')

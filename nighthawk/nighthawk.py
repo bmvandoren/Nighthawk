@@ -8,7 +8,7 @@ import time
 import librosa
 import numpy as np
 
-import nighthawk.run_reconstructed_model as run_reconstructed_model
+import run_reconstructed_model as run_reconstructed_model
 
 
 _PACKAGE_DIR_PATH = Path(__file__).parent

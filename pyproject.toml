@@ -11,10 +11,10 @@
 #     conda activate nighthawk-dev
 #     pip install -e <nighthawk package dir path>
 #
-# To build the `nighthawk` package, issue the following commands from
+# To build the `nighthawk` package, activate a Python environment that
+# includes the `build` package and issue the following command from
 # within the directory containing this TOML file:
 #
-#     conda activate nighthawk-dev
 #     python -m build
 
 [build-system]
@@ -58,4 +58,4 @@ dependencies = [
 "Bug Tracker" = "https://github.com/bmvandoren/nighthawk/issues"
 
 [project.scripts]
-nighthawk = "nighthawk.nighthawk:main"
+nighthawk = "nighthawk.run_nighthawk:main"

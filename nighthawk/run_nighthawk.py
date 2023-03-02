@@ -11,7 +11,7 @@ def main():
 
     args = _parse_args()
 
-    nh.process_files(
+    nh.run_detector_on_files(
         args.input_file_paths, args.hop_duration, args.threshold,
         args.merge_overlaps, args.drop_uncertain, args.csv_output,
         args.raven_output, args.output_dir_path)

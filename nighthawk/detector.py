@@ -30,7 +30,7 @@ _CONFIG_DIR_PATH = _PACKAGE_DIR_PATH / 'test_config'
 # TODO: Consider different `librosa.load` resampling algorithms.
 
 
-def process_files(
+def run_detector_on_files(
         input_file_paths, hop_duration=DEFAULT_HOP_DURATION,
         threshold=DEFAULT_THRESHOLD, merge_overlaps=DEFAULT_MERGE_OVERLAPS,
         drop_uncertain=DEFAULT_DROP_UNCERTAIN, csv_output=DEFAULT_CSV_OUTPUT,
@@ -50,7 +50,7 @@ def process_files(
 
         print(f'Running detector on audio file "{input_file_path}"...')
         
-        detections = _process_file(
+        detections = _run_detector_on_file(
             input_file_path, model, config_file_paths, hop_duration,
             threshold, merge_overlaps, drop_uncertain)
 
@@ -95,7 +95,7 @@ def _get_configuration_file_paths():
     return paths
 
 
-def _process_file(
+def _run_detector_on_file(
         audio_file_path, model, paths, hop_duration, threshold,
         merge_overlaps, drop_uncertain):
 

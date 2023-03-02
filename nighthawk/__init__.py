@@ -8,5 +8,5 @@ from .detector import (
     DEFAULT_THRESHOLD,
     MODEL_INPUT_DURATION,
     MODEL_SAMPLE_RATE,
-    process_files
+    run_detector_on_files
 )

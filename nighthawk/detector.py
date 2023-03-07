@@ -1,4 +1,4 @@
-"""Script that runs the Nighthawk NFC detector on specified audio files."""
+"""Functions and constants for the Nighthawk NFC detector."""
 
 
 from pathlib import Path

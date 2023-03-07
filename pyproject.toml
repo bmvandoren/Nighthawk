@@ -9,7 +9,7 @@
 #
 #     conda create -n nighthawk-dev python=3.10
 #     conda activate nighthawk-dev
-#     pip install -e <nighthawk package dir path>
+#     pip install -e <nighthawk repo dir path>
 #
 # To build the `nighthawk` package, activate a Python environment that
 # includes the `build` package and issue the following command from
@@ -29,7 +29,7 @@ authors = [
 ]
 description = "Nighthawk avian nocturnal flight call detector"
 # readme = "README.md"
-# license = {file = "LICENSE.txt"}
+# license = {file = "LICENSE"}
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

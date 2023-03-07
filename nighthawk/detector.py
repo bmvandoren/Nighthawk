@@ -13,7 +13,7 @@ import nighthawk.run_reconstructed_model as run_reconstructed_model
 MODEL_SAMPLE_RATE = 22050         # Hz
 MODEL_INPUT_DURATION = 1          # seconds
 
-DEFAULT_HOP_DURATION = .2         # seconds
+DEFAULT_HOP_SIZE = 20             # percent of model input duration
 DEFAULT_THRESHOLD = 50            # percent
 DEFAULT_MERGE_OVERLAPS = True
 DEFAULT_DROP_UNCERTAIN = True
@@ -31,7 +31,7 @@ _CONFIG_DIR_PATH = _PACKAGE_DIR_PATH / 'test_config'
 
 
 def run_detector_on_files(
-        input_file_paths, hop_duration=DEFAULT_HOP_DURATION,
+        input_file_paths, hop_size=DEFAULT_HOP_SIZE,
         threshold=DEFAULT_THRESHOLD, merge_overlaps=DEFAULT_MERGE_OVERLAPS,
         drop_uncertain=DEFAULT_DROP_UNCERTAIN, csv_output=DEFAULT_CSV_OUTPUT,
         raven_output=DEFAULT_RAVEN_OUTPUT,
@@ -51,8 +51,8 @@ def run_detector_on_files(
         print(f'Running detector on audio file "{input_file_path}"...')
         
         detections = _run_detector_on_file(
-            input_file_path, model, config_file_paths, hop_duration,
-            threshold, merge_overlaps, drop_uncertain)
+            input_file_path, model, config_file_paths, hop_size, threshold,
+            merge_overlaps, drop_uncertain)
 
         if csv_output:
             output_file_path = _prep_for_output(
@@ -96,17 +96,20 @@ def _get_configuration_file_paths():
 
 
 def _run_detector_on_file(
-        audio_file_path, model, paths, hop_duration, threshold,
-        merge_overlaps, drop_uncertain):
+        audio_file_path, model, paths, hop_size, threshold, merge_overlaps,
+        drop_uncertain):
 
     p = paths
     
+    # Change hop size from percentage to seconds.
+    hop_dur = hop_size / 100 * MODEL_INPUT_DURATION
+
     # Change threshold from percentage to fraction.
     threshold /= 100
 
     return run_reconstructed_model.run_model_on_file(
         model, audio_file_path, MODEL_SAMPLE_RATE, MODEL_INPUT_DURATION,
-        hop_duration, p.species, p.groups, p.families, p.orders,
+        hop_dur, p.species, p.groups, p.families, p.orders,
         p.ebird_taxonomy, p.group_ebird_codes, p.calibrators, p.config,
         stream=False, threshold=threshold, quiet=True,
         model_runner=_get_model_predictions,

@@ -12,7 +12,7 @@ def main():
     args = _parse_args()
 
     nh.run_detector_on_files(
-        args.input_file_paths, args.hop_duration, args.threshold,
+        args.input_file_paths, args.hop_size, args.threshold,
         args.merge_overlaps, args.drop_uncertain, args.csv_output,
         args.raven_output, args.output_dir_path)
     
@@ -28,12 +28,12 @@ def _parse_args():
         nargs='+')
     
     parser.add_argument(
-        '--hop-duration',
+        '--hop-size',
         help=(
-            f'the hop duration in seconds, a number in the range '
-            f'(0, {nh.MODEL_INPUT_DURATION}]. (default: 0.2)'),
-        type=_parse_hop_duration,
-        default=nh.DEFAULT_HOP_DURATION)    
+            f'the hop size as a percentage of the model input '
+            f'duration, a number in the range (0, 100]. (default: 20)'),
+        type=_parse_hop_size,
+        default=nh.DEFAULT_HOP_SIZE)    
     
     parser.add_argument(
         '--threshold',
@@ -77,23 +77,23 @@ def _parse_args():
     return parser.parse_args()
 
 
-def _parse_hop_duration(value):
+def _parse_hop_size(value):
     
     try:
         hop = float(value)
     except Exception:
-        _handle_hop_duration_error(value)
+        _handle_hop_size_error(value)
 
-    if hop <= 0 or hop > nh.MODEL_INPUT_DURATION:
-        _handle_hop_duration_error(value)
+    if hop <= 0 or hop > 100:
+        _handle_hop_size_error(value)
     
     return hop
 
 
-def _handle_hop_duration_error(value):
+def _handle_hop_size_error(value):
     raise ArgumentTypeError(
-        f'Bad hop duration "{value}". Hop duration must be '
-        f'a number in the range (0, {nh.MODEL_INPUT_DURATION}].')    
+        f'Bad hop size "{value}". Hop size must be a number in the '
+        f'range (0, 100].')    
 
 
 def _parse_threshold(value):

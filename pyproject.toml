@@ -35,9 +35,9 @@ build-backend = "hatchling.build"
 name = "nighthawk"
 version = "0.1.0a0"
 description = "Nighthawk avian nocturnal flight call detector"
-# readme = "README.md"
+readme = "README.md"
 requires-python = "~=3.10.0"
-# license = {file = "LICENSE"}
+license = {file = "LICENSE"}
 authors = [
   {name = "Benjamin Van Doren", email = "vandoren@cornell.edu"},
 ]

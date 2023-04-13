@@ -2,10 +2,11 @@ import librosa
 import time
 import numpy as np
 import pandas as pd
-import pickle
 import os
 import json
 from itertools import compress
+
+from nighthawk.probability_calibration_utils import load_calibrations
 
 
 def process_overlapping_detections(df,combine_type,
@@ -675,9 +676,7 @@ def run_model_on_file(audio_model,
     if calibrators_fp is not None:
         if not quiet:
             print("doing calibration") 
-        calib_file = open(calibrators_fp, 'rb')
-        calibrators = pickle.load(calib_file)
-        calib_file.close()
+        calibrators = load_calibrations(calibrators_fp)
         probs_df_dict = {key : apply_calibration(df,calibrators) for key,df in probs_df_dict.items()}
     else:
         if not quiet:

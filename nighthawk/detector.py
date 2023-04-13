@@ -90,7 +90,7 @@ def _get_configuration_file_paths():
  
     config = _CONFIG_DIR_PATH
     paths.config = config / 'test_config.json'
-    paths.calibrators = config / 'calibrators_dict.obj'
+    paths.calibrators = config / 'probability_calibrations.csv'
 
     return paths
 

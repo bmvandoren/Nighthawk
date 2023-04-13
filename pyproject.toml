@@ -47,19 +47,10 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-
     "jupyter",
     "librosa~=0.9.0",
     "pandas",
-
-    # The scikit-learn package version number should match exactly
-    # that of the version that saved the sigmoid probability
-    # calibrators. Otherwise scikit-learn will issue a warning every
-    # time the detector runs.
-    "scikit-learn==1.0.1",
-
     "tensorflow~=2.11.0"
-
 ]
 
 [project.urls]

@@ -10,7 +10,8 @@ from nighthawk.probability_calibration_utils import load_calibrations
 
 
 def process_overlapping_detections(df,combine_type,
-                                  intervals_closed=True):
+                                  intervals_closed=True,
+                                  max_duration=5):
 
     df.sort_values("start_sec", inplace=True)
 
@@ -71,7 +72,52 @@ def process_overlapping_detections(df,combine_type,
         #     pdb.set_trace()
         df_combine = df_list[0]
 
-    df_combine = df_combine.sort_values('start_sec').reset_index(drop=True)
+  # code for splitting long detections
+    def arange_with_t2(t1,t2,step): # puts t2 at the end
+        return np.append(np.arange(start=t1,stop=t2,step=step),t2)
+
+    def split_long_detections_helper(row,max_duration=5):
+        row = row.squeeze() # convert to series
+        dur = row['end_sec']-row['start_sec']
+        # pdb.set_trace()
+        if dur>max_duration:
+            b = arange_with_t2(row['start_sec'],row['end_sec'],max_duration)
+            new_starts = b[:-1]
+            new_stops = b[1:]
+
+            assert len(new_starts)==len(new_stops)
+            # convert to one-row data frame
+            row_df = row.to_frame().T
+
+            new_df = pd.concat([row_df]*len(new_starts), ignore_index=True)
+            new_df['start_sec'] = new_starts
+            new_df['end_sec'] = new_stops
+
+            return new_df
+        else:
+            return row.to_frame().T
+
+
+    def split_long_detections(df,max_duration=5):
+        df = df.reset_index(drop=True)
+        is_too_long = df['end_sec']-df['start_sec'] > max_duration
+        df_keep = df.loc[~is_too_long]
+        df_split = df.loc[is_too_long]
+
+        df_split['tmp'] = range(df_split.shape[0])
+        df_split = df_split.groupby('tmp').apply(split_long_detections_helper,max_duration=max_duration)
+        df_split = df_split.drop('tmp',axis=1)
+        df_split = df_split.reset_index(drop=True)
+
+        df_out = pd.concat([df_keep,df_split])
+        df_out = df_out.sort_values('start_sec').reset_index(drop=True)
+        return df_out        
+        
+    # split any detections longer than max_duration
+    df_combine = split_long_detections(df_combine,max_duration=max_duration)
+    
+    # splitting already does this at the end
+    # df_combine = df_combine.sort_values('start_sec').reset_index(drop=True)
 
     return df_combine
 

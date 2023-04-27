@@ -22,7 +22,7 @@ def process_overlapping_detections(df,combine_type,
         return df
     
     # group detections by class
-    df_list = [d for _, d in df.groupby('class')]
+    df_list = [d for _, d in df.groupby('class', group_keys=False)]
 
     # make merge_group for each df in list
     def merge_detections(group):
@@ -105,7 +105,7 @@ def process_overlapping_detections(df,combine_type,
         df_split = df.loc[is_too_long]
 
         df_split['tmp'] = range(df_split.shape[0])
-        df_split = df_split.groupby('tmp').apply(split_long_detections_helper,max_duration=max_duration)
+        df_split = df_split.groupby('tmp', group_keys=False).apply(split_long_detections_helper,max_duration=max_duration)
         df_split = df_split.drop('tmp',axis=1)
         df_split = df_split.reset_index(drop=True)
 

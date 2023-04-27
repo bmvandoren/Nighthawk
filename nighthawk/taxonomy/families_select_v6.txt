@@ -2,15 +2,12 @@ Turdidae
 Parulidae
 Passerellidae
 Cardinalidae
-Fringillidae
-Anatidae
 Ardeidae
 Charadriidae
 Regulidae
 Scolopacidae
 Icteridae
 Cuculidae
-Rallidae
 Motacillidae
 Calcariidae
 Sittidae
@@ -19,4 +16,4 @@ Corvidae
 Recurvirostridae
 Alaudidae
 Bombycillidae
-Tytonidae
+Haematopodidae

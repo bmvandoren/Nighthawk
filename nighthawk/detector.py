@@ -15,6 +15,7 @@ MODEL_INPUT_DURATION = 1          # seconds
 
 DEFAULT_HOP_SIZE = 20             # percent of model input duration
 DEFAULT_THRESHOLD = 50            # percent
+DEFAULT_MASK_AP_THRESHOLD = 0.7
 DEFAULT_MERGE_OVERLAPS = True
 DEFAULT_DROP_UNCERTAIN = True
 DEFAULT_CSV_OUTPUT = True
@@ -35,7 +36,8 @@ def run_detector_on_files(
         threshold=DEFAULT_THRESHOLD, merge_overlaps=DEFAULT_MERGE_OVERLAPS,
         drop_uncertain=DEFAULT_DROP_UNCERTAIN, csv_output=DEFAULT_CSV_OUTPUT,
         raven_output=DEFAULT_RAVEN_OUTPUT,
-        output_dir_path=DEFAULT_OUTPUT_DIR_PATH):
+        output_dir_path=DEFAULT_OUTPUT_DIR_PATH,
+        mask_ap_threshold=DEFAULT_MASK_AP_THRESHOLD):
     
     print('Loading detector model...')
     model = _load_model()
@@ -52,7 +54,7 @@ def run_detector_on_files(
         
         detections = _run_detector_on_file(
             input_file_path, model, config_file_paths, hop_size, threshold,
-            merge_overlaps, drop_uncertain)
+            merge_overlaps, drop_uncertain, mask_ap_threshold)
 
         if csv_output:
             output_file_path = _prep_for_output(
@@ -90,6 +92,7 @@ def _get_configuration_file_paths():
  
     config = _CONFIG_DIR_PATH
     paths.config = config / 'test_config.json'
+    paths.test_set_performance = config / 'test_set_performance'
     paths.calibrators = config / 'probability_calibrations.csv'
 
     return paths
@@ -97,7 +100,7 @@ def _get_configuration_file_paths():
 
 def _run_detector_on_file(
         audio_file_path, model, paths, hop_size, threshold, merge_overlaps,
-        drop_uncertain):
+        drop_uncertain,mask_ap_threshold):
 
     p = paths
     
@@ -115,7 +118,9 @@ def _run_detector_on_file(
         model_runner=_get_model_predictions,
         postprocess_drop_singles_by_tax_level=drop_uncertain,
         postprocess_merge_overlaps=merge_overlaps,
-        postprocess_retain_only_overlaps=drop_uncertain)
+        postprocess_retain_only_overlaps=drop_uncertain,
+        mask_output_ap_threshold=mask_ap_threshold,
+        test_set_performance_dir=p.test_set_performance)
 
 
 def _get_model_predictions(

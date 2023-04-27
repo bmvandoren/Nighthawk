@@ -618,7 +618,9 @@ def run_model_on_file(audio_model,
                      model_runner=None,
                      postprocess_drop_singles_by_tax_level=True,
                      postprocess_merge_overlaps=True,
-                     postprocess_retain_only_overlaps=True # only does something if postprocess_merge_overlaps=True
+                     postprocess_retain_only_overlaps=True, # only does something if postprocess_merge_overlaps=True
+                     mask_output_ap_threshold=None,
+                      test_set_performance_dir=None
                      ):
     
     if not quiet:
@@ -653,6 +655,46 @@ def run_model_on_file(audio_model,
         subselect_group = test_configs['subselect_taxa']['group']
         subselect_family = test_configs['subselect_taxa']['family']
         subselect_order = test_configs['subselect_taxa']['order']
+        
+        if mask_output_ap_threshold is not None and mask_output_ap_threshold>0:
+            if not quiet:
+                print("masking taxa with ap less than %s" % mask_output_ap_threshold)
+
+            def intersection(lst1, lst2):
+                lst3 = [value for value in lst1 if value in lst2]
+                return lst3
+
+            species_ap_fp = os.path.join(test_set_performance_dir,'taxon_summary_species.csv')
+            species_ap_df = pd.read_csv(species_ap_fp)
+            bad_species = species_ap_df.iloc[:,0][species_ap_df['ap_masked']<mask_output_ap_threshold].tolist()
+            species_to_remove = intersection(subselect_species,bad_species)
+            if not quiet:
+                print("masking the following species:",species_to_remove)
+            subselect_species = [x for x in subselect_species if x not in species_to_remove]
+            
+            group_ap_fp = os.path.join(test_set_performance_dir,'taxon_summary_group.csv')
+            group_ap_df = pd.read_csv(group_ap_fp)
+            bad_group = group_ap_df.iloc[:,0][group_ap_df['ap_masked']<mask_output_ap_threshold].tolist()
+            group_to_remove = intersection(subselect_group,bad_group)
+            if not quiet:
+                print("masking the following group:",group_to_remove)
+            subselect_group = [x for x in subselect_group if x not in group_to_remove]
+            
+            family_ap_fp = os.path.join(test_set_performance_dir,'taxon_summary_family.csv')
+            family_ap_df = pd.read_csv(family_ap_fp)
+            bad_family = family_ap_df.iloc[:,0][family_ap_df['ap_masked']<mask_output_ap_threshold].tolist()
+            family_to_remove = intersection(subselect_family,bad_family)
+            if not quiet:
+                print("masking the following family:",family_to_remove)
+            subselect_family = [x for x in subselect_family if x not in family_to_remove]
+            
+            order_ap_fp = os.path.join(test_set_performance_dir,'taxon_summary_order.csv')
+            order_ap_df = pd.read_csv(order_ap_fp)
+            bad_order = order_ap_df.iloc[:,0][order_ap_df['ap_masked']<mask_output_ap_threshold].tolist()
+            order_to_remove = intersection(subselect_order,bad_order)
+            if not quiet:    
+                print("masking the following order:",order_to_remove)
+            subselect_order = [x for x in subselect_order if x not in order_to_remove]        
                     
             
     else:

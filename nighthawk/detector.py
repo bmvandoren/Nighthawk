@@ -150,7 +150,7 @@ def _get_model_predictions(
 
 def _generate_model_inputs(file_path, input_dur, hop_dur, target_sr=22050):
 
-    file_dur = librosa.get_duration(filename=file_path)
+    file_dur = librosa.get_duration(path=file_path)
 
     load_size = 64        # model inputs
     load_dur = (load_size - 1) * hop_dur + input_dur
@@ -180,7 +180,7 @@ def _generate_model_inputs(file_path, input_dur, hop_dur, target_sr=22050):
 
 
 def _report_processing_speed(file_path, elapsed_time):
-    file_dur = librosa.get_duration(filename=file_path)
+    file_dur = librosa.get_duration(path=file_path)
     rate = file_dur / elapsed_time
     print(
         f'Processed {file_dur:.1f} seconds of audio in {elapsed_time:.1f} '

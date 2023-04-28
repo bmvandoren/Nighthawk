@@ -28,9 +28,6 @@ _TAXONOMY_DIR_PATH = _PACKAGE_DIR_PATH / 'taxonomy'
 _CONFIG_DIR_PATH = _PACKAGE_DIR_PATH / 'test_config'
 
 
-# TODO: Consider different `librosa.load` resampling algorithms.
-
-
 def run_detector_on_files(
         input_file_paths, hop_size=DEFAULT_HOP_SIZE,
         threshold=DEFAULT_THRESHOLD, merge_overlaps=DEFAULT_MERGE_OVERLAPS,
@@ -167,7 +164,8 @@ def _generate_model_inputs(file_path, input_dur, hop_dur, target_sr=22050):
     while load_offset < file_dur:
 
         samples, _ = librosa.load(
-            file_path, sr=target_sr, offset=load_offset, duration=load_dur)
+            file_path, sr=target_sr, offset=load_offset, duration=load_dur,
+            res_type='soxr_hq')
 
         sample_count = len(samples)
         start_index = 0

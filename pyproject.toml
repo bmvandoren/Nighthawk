@@ -48,9 +48,9 @@ classifiers = [
 ]
 dependencies = [
     "jupyter",
-    "librosa~=0.9.0",
+    "librosa~=0.10.0",
     "pandas",
-    "tensorflow~=2.11.0"
+    "tensorflow~=2.12.0"
 ]
 
 [project.urls]

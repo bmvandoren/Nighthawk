@@ -278,7 +278,7 @@ def process_file_chunked(model,
     assert sr==target_sr, "Wrong sample rate"
     clip_length_sample = int(clip_length_sec * sr)
 
-    test_file_dur_s = librosa.get_duration(filename=test_filename)
+    test_file_dur_s = librosa.get_duration(path=test_filename)
 
     file_load_stride_sec = 900.
 
@@ -357,7 +357,7 @@ def process_file_stream(model,
     assert sr==target_sr, "Wrong sample rate"
     clip_length_sample = int(clip_length_sec * sr)
 
-    test_file_dur_s = librosa.get_duration(filename=test_filename)
+    test_file_dur_s = librosa.get_duration(path=test_filename)
 
     start_sec = 0.
     start_sample = int(start_sec * sr)

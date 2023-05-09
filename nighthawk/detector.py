@@ -14,7 +14,7 @@ MODEL_SAMPLE_RATE = 22050         # Hz
 MODEL_INPUT_DURATION = 1          # seconds
 
 DEFAULT_HOP_SIZE = 20             # percent of model input duration
-DEFAULT_THRESHOLD = 50            # percent
+DEFAULT_THRESHOLD = 80            # percent
 DEFAULT_MASK_AP_THRESHOLD = 0.7
 DEFAULT_MERGE_OVERLAPS = True
 DEFAULT_DROP_UNCERTAIN = True

@@ -37,7 +37,7 @@ def _parse_args():
     
     parser.add_argument(
         '--threshold',
-        help='the detection threshold, a number in [0, 100]. (default: 50)',
+        help='the detection threshold, a number in [0, 100]. (default: 80)',
         type=_parse_threshold,
         default=nh.DEFAULT_THRESHOLD)
     

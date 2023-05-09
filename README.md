@@ -21,12 +21,12 @@ python nighthawk/run_nighthawk.py INPUT.wav
 
 The following code runs Nighthawk on a test file included in the repo:
 ```
-python nighthawk/run_nighthawk.py test_inputs/test_1.wav
+python nighthawk/run_nighthawk.py test_inputs/test1.wav
 ```
   
 Adding the `--raven-output` flag will also export a .txt file that can be read as a selection table by [Raven Pro](https://ravensoundsoftware.com/software/raven-pro/):
 ```
-python nighthawk/run_nighthawk.py test_inputs/test_1.wav --raven-output
+python nighthawk/run_nighthawk.py test_inputs/test1.wav --raven-output
 ```
   
 To view full usage help, run:

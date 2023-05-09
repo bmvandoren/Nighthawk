@@ -12,7 +12,7 @@ Nighthawk runs in a Python environment. The underlying model was trained with [T
 For details on Nighthawk training and performance, see the following paper:
 **CITATION FOR PAPER ONCE ON BIORXIV**
 
-## Usage
+## Command line usage
 
 The simplest possible command is to run Nighthawk on a single wav file and output a .csv file of detections into the same directory as the input file:
 ```
@@ -67,7 +67,7 @@ options:
 Users can install Nighthawk via pip 
 **HAROLD, COULD YOU PLEASE ADD RECOMMEND INSTALLATION INSTRUCTIONS FOR THE PACKAGE WITH ANACONDA?**
 
-### Vesper plugin
+## Use with Vesper
   
 **HAROLD TODO**
   

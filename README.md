@@ -10,11 +10,11 @@ Nighthawk is trained on recordings of nocturnal flight calls (NFCs) from the Ame
 Nighthawk runs in a Python environment. The underlying model was trained with [TensorFlow](tensorflow.org). 
 
 For details on Nighthawk training and performance, see the following paper:
-**<CITATION FOR PAPER ONCE ON BIORXIV>**
+**CITATION FOR PAPER ONCE ON BIORXIV**
 
 ## Usage
 
-The simplest possible command is to run Nighthawk on a single wav file and output .csv files into the same directory as the input file:
+The simplest possible command is to run Nighthawk on a single wav file and output a .csv file of detections into the same directory as the input file:
 ```
 python nighthawk/run_nighthawk.py INPUT.wav
 ```
@@ -65,7 +65,7 @@ options:
 ## Installation
 
 Users can install Nighthawk via pip 
-**<HAROLD, COULD YOU PLEASE ADD RECOMMEND INSTALLATION INSTRUCTIONS FOR THE PACKAGE WITH ANACONDA?>**
+**HAROLD, COULD YOU PLEASE ADD RECOMMEND INSTALLATION INSTRUCTIONS FOR THE PACKAGE WITH ANACONDA?**
 
 ### Vesper plugin
   
@@ -77,7 +77,7 @@ Users can install Nighthawk via pip
 Nighthawk is provided under a [Creative Commons BY-NC 4.0 License](https://creativecommons.org/licenses/by-nc/4.0/). Please read the [license terms](https://creativecommons.org/licenses/by-nc/4.0/legalcode). Under this license, you are free to share and adapt this material, but you must provide appropriate attribution, and you may not use the material for commercial purposes.
   
 If you use Nighthawk, please use the following citation:
-**<CITATION FOR PAPER ONCE ON BIORXIV>**
+**CITATION FOR PAPER ONCE ON BIORXIV**
   
 ## Contact and Collaborations
 

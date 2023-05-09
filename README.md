@@ -17,6 +17,10 @@ For details on Nighthawk training and performance, see the following paper:
 Users can install Nighthawk via pip 
 **<HAROLD, COULD YOU PLEASE ADD RECOMMEND INSTALLATION INSTRUCTIONS FOR THE PACKAGE WITH ANACONDA?>**
 
+### Vesper plugin
+  
+**HAROLD TODO**
+  
 ## Usage
   
 TODO 

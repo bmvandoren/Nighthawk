@@ -4,7 +4,7 @@ When Nighthawk makes an incorrect classification, submitting feedback will help 
 
 [Jump to FAQ](#FAQ) (bottom of page).
 
-**IMPORTANT**: Be sure to save your selection table with any updates!
+**IMPORTANT**: Be sure to save your selection table!
 
 ## Step 1: Run Nighthawk with `--raven-output`.
 

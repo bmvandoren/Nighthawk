@@ -119,6 +119,10 @@ For more on this see the
 [Vesper documentation](https://vesper.readthedocs.io/en/latest/).
 **UPDATE LINK WHEN VESPER DOCUMENTATION IS PUBLISHED**
 
+## Improving Nighthawk
+
+See [this page](instructions/feedback/model_feedback.md) for instructions on how to review Nighthawk's results on your data and submit files to us to improve the model.
+
 ## Licensing and Citation
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.

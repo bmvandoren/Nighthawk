@@ -1,4 +1,4 @@
-# Giving model feedback
+# Giving model feedback (correcting Nighthawk's mistakes)
 
 When Nighthawk makes an incorrect classification, submitting feedback will help improve the model's performance in the future. This document outlines the steps for submitting feedback on Nighthawk annotations using [Raven Pro](https://ravensoundsoftware.com/software/raven-pro/) sound analysis software.
 

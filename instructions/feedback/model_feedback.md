@@ -20,21 +20,21 @@ This command creates the output files `test_inputs/test3_detections.txt` and `te
 
 In Raven Pro, use File -\> Open Sound Files and choose the input audio file (in this case, `test3.wav`). Open a spectrogram view with your favored parameters. Then, use File -\> Open Selection Table and choose the corresponding .txt output (in this case, `test3_detections.txt)`. Your Raven window will now look something like this:
 
-![test3.wav opened in Raven Pro, with test3_detections.txt open as a selection table.](assets/file_and_seltab_opened.png){width="100%"}
+![test3.wav opened in Raven Pro, with test3_detections.txt open as a selection table.](assets/file_and_seltab_opened.png)
 
 ## Step 3: Add annotation columns to the selection table.
 
 Create additional annotation columns in the selection table for feedback. Right-click on the selection table header and select "Add Annotation Column":
 
-![](assets/add_annot.png){width="50%"}
+![](assets/add_annot.png)
 
 Name the new annotation column `class_update`:
 
-![](assets/class_update.png){width="50%"}
+![](assets/class_update.png)
 
 You have now added an empty `class_update` column to the selection table:
 
-![](assets/class_update_col.png){width="30%"}
+![](assets/class_update_col.png)
 
 ## Step 4: Specify feedback in the `class_update` column.
 
@@ -56,9 +56,9 @@ Be sure to save your selection table with any updates!
 
 #### Example
 
-![The selection in question.](assets/n_box.png){width="70%"}
+![The selection in question.](assets/n_box.png)
 
-![Nighthawk thinks there is a Parulidae (warbler) call here, but we don't see an obvious call. Enter `n` in the `class_update` column to specify that there are *no* flight calls in this selection.](assets/n.png){width="50%"}
+![Nighthawk thinks there is a Parulidae (warbler) call here, but we don't see an obvious call. Enter `n` in the `class_update` column to specify that there are *no* flight calls in this selection.](assets/n.png)
 
 ### Correct identifications by specifying the correct class
 
@@ -77,11 +77,11 @@ For Nighthawk detections that are identified incorrectly (or could be identified
 
 #### Example
 
-![The selection in question.](assets/turdidae_box_before.png){width="70%"}
+![The selection in question.](assets/turdidae_box_before.png)
 
-![Nighthawk thinks there is a Passeriformes (passerine) call here. We think it can be confidently identified to family Turdidae (thrushes), so we enter `Turdidae` in the `class_update` column.](assets/turdidae.png){width="50%"}
+![Nighthawk thinks there is a Passeriformes (passerine) call here. We think it can be confidently identified to family Turdidae (thrushes), so we enter `Turdidae` in the `class_update` column.](assets/turdidae.png)
 
-![We make sure to shrink the selection so it defines a box around the specific call in question.](assets/turdidae_box_after.png){width="70%"}
+![We make sure to shrink the selection so it defines a box around the specific call in question.](assets/turdidae_box_after.png)
 
 ### Confirm identifications by using `c` and shrinking the selection
 
@@ -94,11 +94,11 @@ For Nighthawk detections that are identified correctly (in the `class` column), 
 
 #### Example
 
-![The selection in question.](assets/swathr_box_before.png){width="70%"}
+![The selection in question.](assets/swathr_box_before.png)
 
-![We think this is indeed swathr (Swainson's Thrush), so we enter `c` in the class_update column.](assets/swathr_c.png){width="50%"}
+![We think this is indeed swathr (Swainson's Thrush), so we enter `c` in the class_update column.](assets/swathr_c.png)
 
-![We make sure to shrink the selection so it defines a box around the specific call in question.](assets/swathr_box_after.png){width="70%"}
+![We make sure to shrink the selection so it defines a box around the specific call in question.](assets/swathr_box_after.png)
 
 ### Add any missed detections by creating a new selection
 
@@ -115,13 +115,13 @@ If you encounter flight calls that were not detected by Nighthawk, you can creat
 
 Note that for this example, which uses `test3.wav`, I have deleted some of Nighthawk's detections in order to demonstrate how to add new detections. If you run Nighthawk on `test3.wav`, you will likely not find any missed calls.
 
-![The audio in question. We see a faint Parulidae (warbler) call that Nighthawk has not detected.](assets/new_parulidae_spec.png){width="70%"}
+![The audio in question. We see a faint Parulidae (warbler) call that Nighthawk has not detected.](assets/new_parulidae_spec.png)
 
-![We draw a new selection box around the call. The box borders are dashed, which means we have not yet committed the selection.](assets/new_parulidae_uncommitted.png){width="70%"}
+![We draw a new selection box around the call. The box borders are dashed, which means we have not yet committed the selection.](assets/new_parulidae_uncommitted.png)
 
-![After committing the selection, the box borders are solid.](assets/new_parulidae_committed.png){width="70%"}
+![After committing the selection, the box borders are solid.](assets/new_parulidae_committed.png)
 
-![We add our ID to the `class_update` column.](assets/new_parulidae.png){width="50%"}
+![We add our ID to the `class_update` column.](assets/new_parulidae.png)
 
 ## Step 5: Save selection table and upload the table and file to us.
 

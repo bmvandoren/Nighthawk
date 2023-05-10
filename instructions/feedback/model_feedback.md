@@ -20,21 +20,22 @@ This command creates the output files `test_inputs/test3_detections.txt` and `te
 
 In Raven Pro, use File -\> Open Sound Files and choose the input audio file (in this case, `test3.wav`). Open a spectrogram view with your favored parameters. Then, use File -\> Open Selection Table and choose the corresponding .txt output (in this case, `test3_detections.txt)`. Your Raven window will now look something like this:
 
-![test3.wav opened in Raven Pro, with test3_detections.txt open as a selection table.](assets/file_and_seltab_opened.png)
+<img src="assets/file_and_seltab_opened.png" width="60%">
 
 ## Step 3: Add annotation columns to the selection table.
 
 Create additional annotation columns in the selection table for feedback. Right-click on the selection table header and select "Add Annotation Column":
 
-![](assets/add_annot.png)
+<img src="assets/add_annot.png" width="30%">
 
 Name the new annotation column `class_update`:
 
-![](assets/class_update.png)
+
+<img src="assets/class_update.png" width="30%">
 
 You have now added an empty `class_update` column to the selection table:
 
-![](assets/class_update_col.png)
+<img src="assets/class_update_col.png" width="30%">
 
 ## Step 4: Specify feedback in the `class_update` column.
 
@@ -58,11 +59,11 @@ Be sure to save your selection table with any updates!
 
 The selection in question:
 
-![](assets/n_box.png)
+<img src="assets/n_box.png" width="60%">
 
 Nighthawk thinks there is a Parulidae (warbler) call here, but we don't see an obvious call. Enter `n` in the `class_update` column to specify that there are *no* flight calls in this selection:
 
-![](assets/n.png)
+<img src="assets/n.png" width="30%">
 
 ### Correct identifications by specifying the correct class and shrinking the selection
 
@@ -83,15 +84,15 @@ For Nighthawk detections that are identified incorrectly (or could be identified
 
 The selection in question:
 
-![](assets/turdidae_box_before.png)
+<img src="assets/turdidae_box_before.png" width="60%">
 
 Nighthawk thinks there is a Passeriformes (passerine) call here. We think it can be confidently identified to family Turdidae (thrushes), so we enter `Turdidae` in the `class_update` column:
 
-![](assets/turdidae.png)
+<img src="assets/turdidae.png" width="30%">
 
 We make sure to shrink the selection so it defines a box around the specific call in question:
 
-![](assets/turdidae_box_after.png)
+<img src="assets/turdidae_box_after.png" width="60%">
 
 ### Confirm identifications by using `c` and shrinking the selection
 
@@ -106,15 +107,15 @@ For Nighthawk detections that are identified correctly (in the `class` column), 
 
 The selection in question:
 
-![](assets/swathr_box_before.png)
+<img src="assets/swathr_box_before.png" width="60%">
 
 We think this is indeed swathr (Swainson's Thrush), so we enter `c` in the class_update column:
 
-![](assets/swathr_c.png)
+<img src="assets/swathr_c.png" width="30%">
 
 We make sure to shrink the selection so it defines a box around the specific call in question:
 
-![](assets/swathr_box_after.png)
+<img src="assets/swathr_box_after.png" width="60%">
 
 ### Add any missed detections by creating a new selection
 
@@ -133,19 +134,19 @@ Note that for this example, which uses `test3.wav`, I have deleted some of Night
 
 The audio in question. We see a faint Parulidae (warbler) call that Nighthawk has not detected:
 
-![](assets/new_parulidae_spec.png)
+<img src="assets/new_parulidae_spec.png" width="60%">
 
 We draw a new selection box around the call. The box borders are dashed, which means we have not yet committed the selection:
 
-![](assets/new_parulidae_uncommitted.png)
+<img src="assets/new_parulidae_uncommitted.png" width="60%">
 
 After committing the selection, the box borders are solid:
 
-![](assets/new_parulidae_committed.png)
+<img src="assets/new_parulidae_committed.png" width="60%">
 
 We add our ID to the `class_update` column:
 
-![](assets/new_parulidae.png)
+<img src="assets/new_parulidae.png" width="30%">
 
 ## Step 5: Save selection table and upload the table and file to us.
 

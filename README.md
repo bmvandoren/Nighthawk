@@ -119,7 +119,7 @@ For more on this see the
 [Vesper documentation](https://vesper.readthedocs.io/en/latest/).
 **UPDATE LINK WHEN VESPER DOCUMENTATION IS PUBLISHED**
 
-## Improving Nighthawk
+## Improving Nighthawk by correcting mistakes
 
 See [this page](instructions/feedback/model_feedback.md) for instructions on how to review Nighthawk's results on your data and submit files to us to improve the model.
 

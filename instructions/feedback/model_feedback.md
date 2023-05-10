@@ -56,15 +56,19 @@ Be sure to save your selection table with any updates!
 
 #### Example
 
-![The selection in question.](assets/n_box.png)
+The selection in question:
 
-![Nighthawk thinks there is a Parulidae (warbler) call here, but we don't see an obvious call. Enter `n` in the `class_update` column to specify that there are *no* flight calls in this selection.](assets/n.png)
+![](assets/n_box.png)
 
-### Correct identifications by specifying the correct class
+Nighthawk thinks there is a Parulidae (warbler) call here, but we don't see an obvious call. Enter `n` in the `class_update` column to specify that there are *no* flight calls in this selection:
+
+![](assets/n.png)
+
+### Correct identifications by specifying the correct class and shrinking the selection
 
 For Nighthawk detections that are identified incorrectly (or could be identified more accurately) in the `class` column, do the following:
 
-1.  Enter the correct class in the `class_update` column. The class must either be:
+1.  Enter the correct class in the `class_update` column. The class must be one of the following:
 
     -   A valid species-level eBird code (the `code` column in [nighthawk/taxonomy/ebird_taxonomy.csv](../../nighthawk/taxonomy/ebird_taxonomy.csv))
     -   A valid group (the `group` column in [nighthawk/taxonomy/groups_ebird_codes.csv](../../nighthawk/taxonomy/groups_ebird_codes.csv))
@@ -77,11 +81,17 @@ For Nighthawk detections that are identified incorrectly (or could be identified
 
 #### Example
 
-![The selection in question.](assets/turdidae_box_before.png)
+The selection in question:
 
-![Nighthawk thinks there is a Passeriformes (passerine) call here. We think it can be confidently identified to family Turdidae (thrushes), so we enter `Turdidae` in the `class_update` column.](assets/turdidae.png)
+![](assets/turdidae_box_before.png)
 
-![We make sure to shrink the selection so it defines a box around the specific call in question.](assets/turdidae_box_after.png)
+Nighthawk thinks there is a Passeriformes (passerine) call here. We think it can be confidently identified to family Turdidae (thrushes), so we enter `Turdidae` in the `class_update` column:
+
+![](assets/turdidae.png)
+
+We make sure to shrink the selection so it defines a box around the specific call in question:
+
+![](assets/turdidae_box_after.png)
 
 ### Confirm identifications by using `c` and shrinking the selection
 
@@ -94,11 +104,17 @@ For Nighthawk detections that are identified correctly (in the `class` column), 
 
 #### Example
 
-![The selection in question.](assets/swathr_box_before.png)
+The selection in question:
 
-![We think this is indeed swathr (Swainson's Thrush), so we enter `c` in the class_update column.](assets/swathr_c.png)
+![](assets/swathr_box_before.png)
 
-![We make sure to shrink the selection so it defines a box around the specific call in question.](assets/swathr_box_after.png)
+We think this is indeed swathr (Swainson's Thrush), so we enter `c` in the class_update column:
+
+![](assets/swathr_c.png)
+
+We make sure to shrink the selection so it defines a box around the specific call in question:
+
+![](assets/swathr_box_after.png)
 
 ### Add any missed detections by creating a new selection
 
@@ -115,13 +131,21 @@ If you encounter flight calls that were not detected by Nighthawk, you can creat
 
 Note that for this example, which uses `test3.wav`, I have deleted some of Nighthawk's detections in order to demonstrate how to add new detections. If you run Nighthawk on `test3.wav`, you will likely not find any missed calls.
 
-![The audio in question. We see a faint Parulidae (warbler) call that Nighthawk has not detected.](assets/new_parulidae_spec.png)
+The audio in question. We see a faint Parulidae (warbler) call that Nighthawk has not detected:
 
-![We draw a new selection box around the call. The box borders are dashed, which means we have not yet committed the selection.](assets/new_parulidae_uncommitted.png)
+![](assets/new_parulidae_spec.png)
 
-![After committing the selection, the box borders are solid.](assets/new_parulidae_committed.png)
+We draw a new selection box around the call. The box borders are dashed, which means we have not yet committed the selection:
 
-![We add our ID to the `class_update` column.](assets/new_parulidae.png)
+![](assets/new_parulidae_uncommitted.png)
+
+After committing the selection, the box borders are solid:
+
+![](assets/new_parulidae_committed.png)
+
+We add our ID to the `class_update` column:
+
+![](assets/new_parulidae.png)
 
 ## Step 5: Save selection table and upload the table and file to us.
 

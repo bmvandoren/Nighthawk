@@ -148,7 +148,7 @@ We add our ID to the `class_update` column:
 
 <img src="assets/new_parulidae.png" width="30%">
 
-## Step 5: Save selection table and upload the table and file to us.
+## Step 5: Save selection table and send us the files.
 
 Once you are finished reviewing a file, please send us both the audio file and selection table with `class_update` column. Contact Benjamin Van Doren ([vandoren\@cornell.edu](mailto:vandoren@cornell.edu)) for instructions on submitting files.
 

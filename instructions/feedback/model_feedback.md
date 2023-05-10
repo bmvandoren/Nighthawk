@@ -11,7 +11,7 @@ When Nighthawk makes an incorrect classification, submitting feedback will help 
 Run Nighthawk across a file and output a Raven selection table with the `--raven-output` flag. Here, we do this on the test3.wav file included in this repository.
 
 ```         
-python nighthawk/run_nighthawk.py test_inputs/test3.wav --raven-output
+nighthawk test_inputs/test3.wav --raven-output
 ```
 
 This command creates the output files `test_inputs/test3_detections.txt` and `test_inputs/test3_detections.csv`.

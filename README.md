@@ -83,7 +83,7 @@ list of all command line arguments, run the command:
 
     nighthawk --help
   
-to see:
+to produce the output:
 
     usage: nighthawk [-h] [--hop-size HOP_SIZE] [--threshold THRESHOLD]
                      [--merge-overlaps | --no-merge-overlaps] [--drop-uncertain | --no-drop-uncertain]

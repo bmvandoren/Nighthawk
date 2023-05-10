@@ -121,7 +121,9 @@ For more on this see the
 
 ## Licensing and Citation
 
-Nighthawk is provided under a [Creative Commons BY-NC 4.0 License](https://creativecommons.org/licenses/by-nc/4.0/). Please read the [license terms](https://creativecommons.org/licenses/by-nc/4.0/legalcode). Under this license, you are free to share and adapt this material, but you must provide appropriate attribution, and you may not use the material for commercial purposes.
+<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
+
+Under this license, you are free to share and adapt this material, but you must provide appropriate attribution, and you may not use the material for commercial purposes.
   
 If you use Nighthawk, please use the following citation:
 **CITATION FOR PAPER ONCE ON BIORXIV**

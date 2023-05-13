@@ -912,8 +912,14 @@ def save_raven_selection_table(detect_df,
     seltab = detect_df.rename(columns={"start_sec":'Begin Time (s)',
                                        "end_sec":'End Time (s)',
                                       "filename":'Begin File'})
-    # seltab['Low Freq (Hz)'] = 0
-    # seltab['High Freq (Hz)'] = 11025
+    # insert low/high frequency columns after Time columns
+    seltab.insert(loc = 2,
+          column = 'Low Freq (Hz)',
+          value = 0)
+    seltab.insert(loc = 3,
+          column = 'High Freq (Hz)',
+          value = 11025)    
+
     # seltab['Begin File'] = seltab['path'].map(os.path.basename)
 
     seltab.to_csv(os.path.join(out_dir, 

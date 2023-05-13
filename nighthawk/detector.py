@@ -216,6 +216,14 @@ def _write_detection_selection_table_file(file_path, detections):
         'filename': 'Begin File'
     }
     selections = detections.rename(columns=columns)
+    
+    # insert low/high frequency columns after Time columns
+    selections.insert(loc = 2,
+          column = 'Low Freq (Hz)',
+          value = 0)
+    selections.insert(loc = 3,
+          column = 'High Freq (Hz)',
+          value = 11025)    
 
     selections.to_csv(file_path, index=False, na_rep='', sep ='\t')
 

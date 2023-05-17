@@ -24,8 +24,8 @@ between Anaconda and Miniconda, see
 [here](https://conda.io/projects/conda/en/stable/user-guide/install/download.html).
 
 The following instructions assume that you're using `conda` to manage
-your Python environments. If you're using anything else, you'll need to
-modify the instructions accordingly.
+your Python environments. If you're using anything else (such as `venv`,
+for example), you'll need to modify the instructions accordingly.
 
 On Windows, type the commands below in an Anaconda Prompt. Anaconda
 Prompt is a program that comes with Anaconda and Miniconda. It is a

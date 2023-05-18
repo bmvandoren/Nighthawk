@@ -3,15 +3,16 @@
 
 from argparse import ArgumentParser, ArgumentTypeError, BooleanOptionalAction
 from pathlib import Path
+from datetime import datetime
+import tempfile
+import tarfile
 
-import nighthawk as nh
 import librosa
 import pandas as pd
 import yaml
-import tarfile
-import tempfile
 import soundfile as sf
-from datetime import datetime
+
+import nighthawk as nh
 
 TARGET_SR = 22050
 

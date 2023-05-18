@@ -15,7 +15,7 @@ from datetime import datetime
 
 TARGET_SR = 22050
 
-UPDATE_COL = 'class_update'
+UPDATE_COL = 'category_update'
 VOC_COL = 'voc_type_update'
 
 EXPECTED_COLUMNS = [
@@ -23,7 +23,7 @@ EXPECTED_COLUMNS = [
     "End Time (s)",    "Low Freq (Hz)", "High Freq (Hz)",
     "Begin File",      "path",     "order",   
     "prob_order",      "family",   "prob_family",     "group",   
-    "prob_group",      "species",  "prob_species",    "class",   
+    "prob_group",      "species",  "prob_species",    "predicted_category",   
     "prob",
     UPDATE_COL # special one
   ]

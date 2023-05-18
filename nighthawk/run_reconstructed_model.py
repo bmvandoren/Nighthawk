@@ -15,14 +15,14 @@ def process_overlapping_detections(df,combine_type,
 
     df.sort_values("start_sec", inplace=True)
 
-    # drop any with class = NA
-    df = df[~pd.isna(df['class'])]
+    # drop any with predicted_category = NA
+    df = df[~pd.isna(df['predicted_category'])]
     
     if len(df)==0:
         return df
     
-    # group detections by class
-    df_list = [d for _, d in df.groupby('class', group_keys=False)]
+    # group detections by predicted_category
+    df_list = [d for _, d in df.groupby('predicted_category', group_keys=False)]
 
     # make merge_group for each df in list
     def merge_detections(group):
@@ -53,7 +53,7 @@ def process_overlapping_detections(df,combine_type,
     else:
         raise Exception("combine_type must be either 'merge' or 'drop'")
 
-    # for each class, sort by start_time and group again by whether the detections are overlapping
+    # for each predicted_category, sort by start_time and group again by whether the detections are overlapping
     for i in range(len(df_list)):
         df_list[i].sort_values("start_sec", inplace=True)
         
@@ -65,7 +65,7 @@ def process_overlapping_detections(df,combine_type,
         # now combine
         df_list[i] = df_list[i].groupby(merge_group, group_keys=False).apply(combine_func)
 
-    if len(df['class'].unique())>1:
+    if len(df['predicted_category'].unique())>1:
         df_combine = pd.concat(df_list)
     else:
         # if not len(df_list)>0:
@@ -124,7 +124,7 @@ def process_overlapping_detections(df,combine_type,
 # take a merged_df with combined taxa, and extract a particular taxonomic level (e.g. family).
 def extract_tax_from_merged(df,tax_level):
     df_tax = df[['start_sec','end_sec','filename','path',tax_level,'prob_' + tax_level]].copy()
-    df_tax.rename(columns = {tax_level:'class', 'prob_' + tax_level:'prob'}, inplace = True)
+    df_tax.rename(columns = {tax_level:'predicted_category', 'prob_' + tax_level:'prob'}, inplace = True)
     return df_tax
 
 # remove detections *equal to* or shorter than length_threshold
@@ -145,8 +145,8 @@ def merge_tax_separately(df,tax_level,combine_type,
     #     display(df_tax)
 
     # process overlapping detections using one of two possible options:
-    #   (1) 'merge' - merge detections accompanied by an overlapping detection of the same class; pass forward the maximum probability value
-    #   (2) 'drop' - drop any detections not accompanied by an overlapping detection of the same class
+    #   (1) 'merge' - merge detections accompanied by an overlapping detection of the same predicted_category; pass forward the maximum probability value
+    #   (2) 'drop' - drop any detections not accompanied by an overlapping detection of the same predicted_category
     df_tax = process_overlapping_detections(df_tax,combine_type=combine_type)
 
     # if display_dfs:
@@ -167,21 +167,21 @@ def merge_tax_separately(df,tax_level,combine_type,
 def predictions_to_dfs(predictions, 
                       n_pred_steps, 
                       bad_inds, 
-                      class_names_dict, 
+                      predicted_category_names_dict, 
                        subselect_dict,
                       clip_length_sec, 
                       hop_size_sec):
     
-    output_order = pd.DataFrame(predictions[0], columns = class_names_dict['order'])
+    output_order = pd.DataFrame(predictions[0], columns = predicted_category_names_dict['order'])
     output_order = output_order[subselect_dict['order']]
     
-    output_family = pd.DataFrame(predictions[1], columns = class_names_dict['family'])
+    output_family = pd.DataFrame(predictions[1], columns = predicted_category_names_dict['family'])
     output_family = output_family[subselect_dict['family']]
 
-    output_group = pd.DataFrame(predictions[2], columns = class_names_dict['group'])
+    output_group = pd.DataFrame(predictions[2], columns = predicted_category_names_dict['group'])
     output_group = output_group[subselect_dict['group']]
 
-    output_species = pd.DataFrame(predictions[3], columns = class_names_dict['species'])
+    output_species = pd.DataFrame(predictions[3], columns = predicted_category_names_dict['species'])
     output_species = output_species[subselect_dict['species']]
 
     # remove bad indices (with bad samples, out of range, above)
@@ -489,7 +489,7 @@ def extract_detections_from_probabilities(df_probs,thresh_prob=0.5):
     det_prob = np.array([df_classes.iloc[row,col] for row,col in zip(det_ind,det_label)])
 
     det_coords_df = df_meta.iloc[det_ind,:]
-    det_values_df = pd.DataFrame({ 'class' : det_class_name,
+    det_values_df = pd.DataFrame({ 'predicted_category' : det_class_name,
       'prob' : det_prob },index=det_ind)
 
     res = pd.concat([det_coords_df,det_values_df],axis=1)
@@ -512,13 +512,13 @@ def combine_taxon_detections(detect_df_dict,
                             species_group_map,
                             species_family_map):
     
-    det_spp = detect_df_dict['species'].rename(columns={'class':'species',
+    det_spp = detect_df_dict['species'].rename(columns={'predicted_category':'species',
                                                         'prob':'prob_species'})
-    det_grp = detect_df_dict['group'].rename(columns={'class':'group',
+    det_grp = detect_df_dict['group'].rename(columns={'predicted_category':'group',
                                                 'prob':'prob_group'})
-    det_fam = detect_df_dict['family'].rename(columns={'class':'family',
+    det_fam = detect_df_dict['family'].rename(columns={'predicted_category':'family',
                                                 'prob':'prob_family'})
-    det_ord = detect_df_dict['order'].rename(columns={'class':'order','prob':'prob_order'})
+    det_ord = detect_df_dict['order'].rename(columns={'predicted_category':'order','prob':'prob_order'})
 
     det = det_ord.copy()
 
@@ -588,11 +588,11 @@ def combine_taxon_detections(detect_df_dict,
             return(pd.NA)
 
     if merged_df.shape[0]>0:        
-        # convert to single class
-        merged_df['class'] = merged_df.apply(lambda x: helper1(x,['species','group','family','order']), axis=1)          
+        # convert to single predicted_category
+        merged_df['predicted_category'] = merged_df.apply(lambda x: helper1(x,['species','group','family','order']), axis=1)          
         merged_df['prob'] = merged_df.apply(lambda x: helper1(x,['prob_species','prob_group','prob_family','prob_order']), axis=1)          
     else:
-        merged_df["class"] = np.nan
+        merged_df["predicted_category"] = np.nan
         merged_df["prob"] = np.nan
     # pdb.set_trace()
     
@@ -627,8 +627,8 @@ def run_model_on_file(audio_model,
         print("loading taxonomy") 
         
     def get_taxon_names(list_fp):
-        df = pd.read_csv(list_fp, header = None, names =['class'])
-        return list(df['class'])
+        df = pd.read_csv(list_fp, header = None, names =['predicted_category'])
+        return list(df['predicted_category'])
 
     species = get_taxon_names(species_list_fp)
     groups = get_taxon_names(group_list_fp)

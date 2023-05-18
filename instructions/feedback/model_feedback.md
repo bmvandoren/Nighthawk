@@ -200,7 +200,7 @@ The utility has now created a new file, a .tar.gz archive called `BENJAMINVANDOR
 
 Now, please send us your .tar.gz file. Contact Benjamin Van Doren ([vandoren\@cornell.edu](mailto:vandoren@cornell.edu)) for instructions on submitting files, or for questions about errors encountered when running `prep_feedback`. This program runs various checks on the files to make sure they are consistent with our expectations; missing columns and typos of various kinds will result in an error.
 
-## FAQ {#faq}
+## FAQ
 
 ### Do I need to review an entire file in order to submit feedback?
 

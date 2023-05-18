@@ -86,6 +86,7 @@ def _get_configuration_file_paths():
     paths.orders =  taxonomy / 'orders_select_v6.txt'
     paths.ebird_taxonomy = taxonomy / 'ebird_taxonomy.csv'
     paths.group_ebird_codes = taxonomy / 'groups_ebird_codes.csv'
+    paths.ibp_codes = taxonomy / 'IBP-AOS-LIST21.csv'
  
     config = _CONFIG_DIR_PATH
     paths.config = config / 'test_config.json'

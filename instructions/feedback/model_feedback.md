@@ -147,9 +147,58 @@ We add our ID to the `category_update` column:
 
 <img src="assets/new_parulidae.png" width="30%"/>
 
-## Step 5: Save selection table and send us the files.
+## Step 5: Save selection table, record metadata in a .yml file, and run `prep_nighthawk` to compile feedback files.
 
-Once you are finished reviewing a file, please send us both the audio file and selection table with `category_update` column. Contact Benjamin Van Doren ([vandoren\@cornell.edu](mailto:vandoren@cornell.edu)) for instructions on submitting files.
+Once you are finished reviewing a file, make sure to save the selection table (.txt file). Then, create a new YAML file with metadata about the recording. A YAML file is simply a text file with a particular formatting. Use `test3.yml` as a template. The contents of that file are shown here for easy reference.
+
+**IMPORTANT: Please ensure that the recording start time entered in your YAML file is in Universal Coordinated Time (UTC).**
+
+```         
+recordist:
+    name: Benjamin Van Doren
+    email: vandoren@cornell.edu
+
+location:
+    name: Ithaca_House
+    latitude: 42.44
+    longitude: -76.50
+
+equipment:
+    microphone: Sennheiser XS Lav Mic
+    recorder: iPhone 8
+    accessories: Belkin charge adapter and Anker powerbank
+
+recording_session:
+    start_time_utc: 2023-05-11 01:16:00
+```
+
+You should now have three different files:
+
+-   An audio file that was run through Nighthawk (e.g. `test3.wav`)
+
+-   A selection table (txt) file edited in Raven (e.g. `test3_detections.txt`)
+
+-   A YAML file with metadata about your recording (e.g. `test3.yml`)
+
+The final step is to run a utility that comes with the Nighthawk package, called `prep_feedback`. This command-line program takes audio, txt, and yml files and outputs a single .tar.gz archive to upload to the Nighthawk developers. For example, this is how we would run `prep_feedback` on our example files:
+
+`prep_feedback --audio test3.wav --txt test3_detections.txt --yaml test3.yml`
+
+This outputs the following:
+
+```         
+NOTE: Please ensure that the recording start time entered
+in your YAML file is in Universal Coordinated Time (UTC).
+
+Checks passed.
+Writing archive BENJAMINVANDOREN_ITHACA-HOUSE_42.44_-76.50_20230511_011600_Z.tar.gz.
+
+Done. Please send this file to Nighthawk developers.
+```
+
+The utility has now created a new file, a .tar.gz archive called `BENJAMINVANDOREN_ITHACA-HOUSE_42.44_-76.50_20230511_011600_Z.tar.gz`.
+
+Now, please send us your .tar.gz file. Contact Benjamin Van Doren ([vandoren\@cornell.edu](mailto:vandoren@cornell.edu)) for instructions on submitting files, or for questions about errors encountered when running `prep_feedback`. This program runs various checks on the files to make sure they are consistent with our expectations; missing columns and typos of various kinds will result in an error.
 
 ## FAQ {#faq}
 

@@ -1,0 +1,16 @@
+recordist:
+    name: Benjamin Van Doren
+    email: vandoren@cornell.edu
+
+location:
+    name: Ithaca_House
+    latitude: 42.44
+    longitude: -76.50
+
+equipment:
+    microphone: Sennheiser XS Lav Mic
+    recorder: iPhone 8
+    accessories: Belkin charge adapter and Anker powerbank
+
+recording_session:
+    start_time_utc: 2023-05-11 01:16:00

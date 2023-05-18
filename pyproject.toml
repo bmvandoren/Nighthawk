@@ -60,3 +60,4 @@ dependencies = [
 
 [project.scripts]
 nighthawk = 'nighthawk.run_nighthawk:main'
+prep_feedback = 'nighthawk.compile_and_verify_feedback:main'

@@ -32,6 +32,8 @@ VOC_CODES = ['fc','fc-song','fc-long','call','song','other']
 
 def main():
 
+    print("\nNOTE: Please ensure that the recording start time entered\nin your YAML file is in Universal Coordinated Time (UTC).")
+    
     args = _parse_args()
 
     # make sure arguments are valid (e.g. files exist)

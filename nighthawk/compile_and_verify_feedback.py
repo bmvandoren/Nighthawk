@@ -9,7 +9,11 @@ import librosa
 import pandas as pd
 import yaml
 import tarfile
+import tempfile
+import soundfile as sf
 from datetime import datetime
+
+TARGET_SR = 22050
 
 UPDATE_COL = 'class_update'
 VOC_COL = 'voc_type_update'
@@ -26,7 +30,8 @@ EXPECTED_COLUMNS = [
 ALLOWED_COLUMNS = EXPECTED_COLUMNS + [VOC_COL, "comment"]
 
 CONFIRM_CODES = ['c','y',"C","Y"]
-BACKGROUND_CODES = ['n','N','bg',"BG"]
+BACKGROUND_CODES = ['n','N','bg',"BG",'background']
+UNKNOWN_CODES = ['unknown']
 
 VOC_CODES = ['fc','fc-song','fc-long','call','song','other']
 
@@ -117,7 +122,29 @@ def _check_paths(args):
     
 
     # check output dir too?
+
+
+def _load_taxonomy(taxonomy_fp,group_map_fp,ibp_fp):
+    groups_map_df = pd.read_csv(group_map_fp)
+    groups_dict = dict(zip(groups_map_df.ebird_code,groups_map_df.group))
+
+    # load taxonomy
+    taxonomy_df = pd.read_csv(taxonomy_fp)
+    # remove parenthetical family stuff
+    taxonomy_df['family'] = taxonomy_df['family'].str.replace(' \(.*\)', '',regex=True)
+
+    # merge group list with taxonomy
+    # taxonomy_df['group'] = [*map(groups_dict.get,taxonomy_df['code'])]
+    taxonomy_df['group'] = taxonomy_df['code'].map(groups_dict)
+
+    # load 4-letter codes
+    ibp_df = pd.read_csv(ibp_fp)
+    # merge 4-letter codes with taxonomy
+    ibp_dict = dict(zip(ibp_df.SCINAME,ibp_df.SPEC))
+    taxonomy_df['ibp_code'] = taxonomy_df['sci_name'].map(ibp_dict)
     
+    return taxonomy_df
+
 def _check_audio_and_txt(args):
 
     # get duration of audio file
@@ -142,16 +169,25 @@ def _check_audio_and_txt(args):
     # get allowed taxa
     config_paths = nh.detector._get_configuration_file_paths()
 
-    species = pd.read_csv(config_paths.species,header=None).iloc[:,0].tolist()
-    groups = pd.read_csv(config_paths.groups,header=None).iloc[:,0].tolist()
-    families = pd.read_csv(config_paths.families,header=None).iloc[:,0].tolist()
-    orders = pd.read_csv(config_paths.orders,header=None).iloc[:,0].tolist()
-    taxa = species + groups + families + orders
-    allowed_update_entries = taxa + CONFIRM_CODES + BACKGROUND_CODES
+    # species = pd.read_csv(config_paths.species,header=None).iloc[:,0].tolist()
+    # groups = pd.read_csv(config_paths.groups,header=None).iloc[:,0].tolist()
+    # families = pd.read_csv(config_paths.families,header=None).iloc[:,0].tolist()
+    # orders = pd.read_csv(config_paths.orders,header=None).iloc[:,0].tolist()    
+
+    taxonomy_df = _load_taxonomy(config_paths.ebird_taxonomy,config_paths.group_ebird_codes,config_paths.ibp_codes)
+
+    species = taxonomy_df['code'].dropna().unique().tolist()
+    groups = taxonomy_df['group'].dropna().unique().tolist()
+    families = taxonomy_df['family'].dropna().unique().tolist()
+    orders = taxonomy_df['order'].dropna().unique().tolist()
+    ibp_codes = taxonomy_df['ibp_code'].dropna().unique().tolist()
+    
+    taxa = species + groups + families + orders + ibp_codes
+    allowed_update_entries = taxa + CONFIRM_CODES + BACKGROUND_CODES + UNKNOWN_CODES
 
     update_entries_lower_uniq = txt_df[UPDATE_COL].dropna()
     if len(update_entries_lower_uniq)>0:
-        update_entries_lower_uniq = update_entries_lower_uniq.str.lower().unique().tolist() # we drop NAs
+        update_entries_lower_uniq = update_entries_lower_uniq.str.lower().str.strip().unique().tolist() # we drop NAs
     else:
         update_entries_lower_uniq = []
 
@@ -167,7 +203,7 @@ def _check_audio_and_txt(args):
     if VOC_COL in txt_df.columns:
         voc_entries_lower_uniq = txt_df[VOC_COL].dropna()
         if len(voc_entries_lower_uniq)>0:
-            voc_entries_lower_uniq = voc_entries_lower_uniq.str.lower().unique().tolist() # we drop NAs
+            voc_entries_lower_uniq = voc_entries_lower_uniq.str.lower().str.strip().unique().tolist() # we drop NAs
         else: 
             voc_entries_lower_uniq = []
         allowed_voc_entries_lower = [i.lower() for i in VOC_CODES]
@@ -213,6 +249,7 @@ def get_output_filename(args):
 
     return output_basename
 
+
 def save_archive(args,out_fn,gz=True):
     
     if gz:
@@ -224,14 +261,43 @@ def save_archive(args,out_fn,gz=True):
 
     archive_out_fp = args.output_dir_path.joinpath(out_fn + ext)
 
-    print(f'\nWriting archive {archive_out_fp}.\n'
-          f'Please send this file to Nighthawk developers.\n')
+
+    # get sample rate of audio file
+    audio_sr = librosa.get_samplerate(path=args.audio_path)
+
+    open_tmpfile = False
+    if audio_sr != TARGET_SR:
+        print(f'\nInput audio has sample rate {audio_sr} Hz. Resampling to {TARGET_SR} Hz.\n')
+
+        y, sr_orig = librosa.load(args.audio_path,sr=None,mono=True) 
+
+        y_resamp = librosa.resample(y=y, 
+                                    orig_sr=sr_orig, 
+                                    target_sr=TARGET_SR, 
+                                    res_type='soxr_hq') # soxr_hq determined best by Harold
+
+        # create a temporary file
+        tmp_fp = tempfile.NamedTemporaryFile(suffix=".wav")
+        open_tmpfile = True
+        # print("tmp_fp before writing file:",tmp_fp.name)
+        sf.write(tmp_fp.name, y_resamp, TARGET_SR, 'PCM_16')
     
+
+    print(f'Writing archive {archive_out_fp}.\n')
+
     with tarfile.open(archive_out_fp, mode) as tar:
         # add audio
-        tar.add(args.audio_path,arcname=out_fn + '.wav')
+        if open_tmpfile: # if we converted
+            # print("tmp_fp before writing archive:",tmp_fp.name)
+            tar.add(tmp_fp.name,arcname=out_fn + '.wav')
+            tmp_fp.close()
+            open_tmpfile = False
+        else:
+            tar.add(args.audio_path,arcname=out_fn + '.wav')
         tar.add(args.txt_path,arcname=out_fn + '.txt')
         tar.add(args.yaml_path,arcname=out_fn + '.yml')    
+
+    print(f'Done. Please send this file to Nighthawk developers.\n')
 
 def _check_yml(metadata):
     

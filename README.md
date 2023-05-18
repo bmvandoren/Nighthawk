@@ -131,7 +131,13 @@ Under this license, you are free to share and adapt this material, but you must 
   
 If you use Nighthawk, please use the following citation:
 **CITATION FOR PAPER ONCE ON BIORXIV**
-  
+
+## Code of Conduct
+
+See our [code of conduct](CODE_OF_CONDUCT.md).
+
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md) 
+
 ## Contact and Collaborations
 
 Please contact Benjamin Van Doren (vandoren@cornell.edu) with questions about Nighthawk. We are always open to scientific collaborations.  

@@ -12,6 +12,8 @@ Nighthawk runs in a Python environment. The underlying model was trained with [T
 For details on Nighthawk training and performance, see the following paper:
 **CITATION FOR PAPER ONCE ON BIORXIV**
 
+<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
+
 ## Installation
 
 We recommend installing and using Nighthawk in its own Python environment.

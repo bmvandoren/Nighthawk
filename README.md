@@ -65,8 +65,9 @@ into your Nighthawk Python environment with:
 can accelerate Nighthawk considerably. Unfortunately, however,
 version 0.8.0 of the ``tensorflow-metal`` package (the most recent
 version as of this writing) also appears to leak memory and cause
-Nighthawk to hang when processing large (e.g. full-night) audio files.
-For this reason the package is not installed with Nighthawk by default.
+Nighthawk to hang when processing large (e.g. full-night) audio files
+on our test machine, an M2 Mac mini with 8 GB of memory. For this
+reason the package is not installed with Nighthawk by default.
 Feel free to install it yourself, however, and test it for your
 particular situation.
 

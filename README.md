@@ -54,7 +54,7 @@ and install the Nighthawk Python package and its dependencies:
 For more about `conda`, including additional `conda` commands, see its
 [documentation](https://docs.conda.io/projects/conda/en/stable/).
 
-### A note about `tensorflow-metal`
+### `tensorflow-metal` for Apple Silicon Macs
 
 On Apple computers with Apple silicon (e.g. M1 and M2)
 processors, installing the ``tensorflow-metal`` Python package

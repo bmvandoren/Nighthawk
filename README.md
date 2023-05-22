@@ -67,7 +67,7 @@ version 0.8.0 of the ``tensorflow-metal`` package (the most recent
 version as of this writing) also appears to leak memory and cause
 Nighthawk to hang when processing large (e.g. full-night) audio files.
 For this reason the package is not installed with Nighthawk by default.
-You are free to install it yourself, however, and test it for your
+Feel free to install it yourself, however, and test it for your
 particular situation.
 
 ## Command Line Usage

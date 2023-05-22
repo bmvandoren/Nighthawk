@@ -54,18 +54,20 @@ and install the Nighthawk Python package and its dependencies:
 For more about `conda`, including additional `conda` commands, see its
 [documentation](https://docs.conda.io/projects/conda/en/stable/).
 
-Note that on Apple computers with Apple silicon (e.g. M1 and M2)
+### A note about `tensorflow-metal`
+
+On Apple computers with Apple silicon (e.g. M1 and M2)
 processors, installing the ``tensorflow-metal`` Python package
 into your Nighthawk Python environment with:
 
     pip install tensorflow-metal
 
-can accelerate Nighthawk considerably. Unfortunately, version 0.8.0
-of the ``tensorflow-metal`` package (the most recent version as of
-this writing) also appears to leak memory and cause Nighthawk to
-hang when processing large (e.g. full-night) audio files. For this
-reason the package is not installed with Nighthawk by default. You
-are free to install it yourself, however, and test it for your
+can accelerate Nighthawk considerably. Unfortunately, however,
+version 0.8.0 of the ``tensorflow-metal`` package (the most recent
+version as of this writing) also appears to leak memory and cause
+Nighthawk to hang when processing large (e.g. full-night) audio files.
+For this reason the package is not installed with Nighthawk by default.
+You are free to install it yourself, however, and test it for your
 particular situation.
 
 ## Command Line Usage

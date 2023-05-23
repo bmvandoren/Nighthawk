@@ -153,7 +153,7 @@ To reference Nighthawk, please use the following citation:
 
 Van Doren, B. M., A. Farnsworth, K. Stone, D. M. Osterhaus, J. Drucker, and G. Van Horn. 2023. Nighthawk: acoustic monitoring of nocturnal bird migration in the Americas. 
 
-<!-- bioRxiv. doi:[10.1101/541336](https://doi.org/10.1101/541336). -->
+<!-- bioRxiv. doi:[10.1101/541336](https://doi.org/10.1101/541336). 
 
 BibTex:
     
@@ -165,6 +165,7 @@ BibTex:
         author = {Van Doren, Benjamin M and Farnsworth, Andrew and Stone, Kate and Osterhaus, Dylan M and Drucker, Jacob and Van Horn, Grant},
         date = {2023},
     }
+-->
 
 ## Code of Conduct
 

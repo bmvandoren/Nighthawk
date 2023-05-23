@@ -136,7 +136,6 @@ You can also use Nighthawk from Vesper, for example if you would like to
 view and interact with spectrograms of its detections in Vesper clip albums.
 For more on this see the
 [Vesper documentation](https://vesper.readthedocs.io/en/latest/).
-**UPDATE LINK WHEN VESPER DOCUMENTATION IS PUBLISHED**
 
 ## Improving Nighthawk by correcting mistakes
 

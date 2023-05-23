@@ -4,8 +4,6 @@ When Nighthawk makes an incorrect classification, submitting feedback will help 
 
 [Jump to FAQ](#FAQ) (bottom of page).
 
-**IMPORTANT**: Be sure to save your selection table!
-
 ## Step 1: Run Nighthawk with `--raven-output`.
 
 Run Nighthawk across a file and output a Raven selection table with the `--raven-output` flag. Here, we do this on the test3.wav file included in this repository.
@@ -68,9 +66,10 @@ Nighthawk thinks there is a Parulidae (warbler) call here, but we don't see an o
 
 For Nighthawk detections that are identified incorrectly (or could be identified more accurately) in the `predicted_category` column, do the following:
 
-1.  Enter the correct classification in the `category_update` column. The category must be one of the following:
+1.  Enter the correct classification in the `category_update` column. The entry must be one of the following:
 
     -   A valid species-level eBird code (the `code` column in [nighthawk/taxonomy/ebird_taxonomy.csv](../../nighthawk/taxonomy/ebird_taxonomy.csv))
+    -   A valid species-level four-letter code (the `SPEC` column in [nighthawk/taxonomy/IBP-AOS-LIST21.csv](../../nighthawk/taxonomy/IBP-AOS-LIST21.csv))
     -   A valid group (the `group` column in [nighthawk/taxonomy/groups_ebird_codes.csv](../../nighthawk/taxonomy/groups_ebird_codes.csv))
     -   A valid family (the Latin word from the `family` column in [nighthawk/taxonomy/ebird_taxonomy.csv](../../nighthawk/taxonomy/ebird_taxonomy.csv))
     -   A valid order (the `order` column in [nighthawk/taxonomy/ebird_taxonomy.csv](../../nighthawk/taxonomy/ebird_taxonomy.csv))
@@ -151,7 +150,7 @@ We add our ID to the `category_update` column:
 
 Once you are finished reviewing a file, make sure to save the selection table (.txt file). Then, create a new YAML file with metadata about the recording. A YAML file is simply a text file with a particular formatting. Use `test3.yml` as a template. The contents of that file are shown here for easy reference.
 
-**IMPORTANT: Please ensure that the recording start time entered in your YAML file is in Universal Coordinated Time (UTC).**
+**IMPORTANT: Please ensure that the recording start time entered in your YAML file is in Universal Coordinated Time (UTC) and NOT in your local time zone.**
 
 ```         
 recordist:

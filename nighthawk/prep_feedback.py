@@ -189,6 +189,8 @@ def _check_audio_and_txt(args):
     update_entries_lower_uniq = txt_df[UPDATE_COL].dropna()
     if len(update_entries_lower_uniq)>0:
         update_entries_lower_uniq = update_entries_lower_uniq.str.lower().str.strip().unique().tolist() # we drop NAs
+        # remove any empty strings
+        update_entries_lower_uniq = list(filter(None, update_entries_lower_uniq)) 
     else:
         update_entries_lower_uniq = []
 

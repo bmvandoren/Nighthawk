@@ -9,11 +9,9 @@ Nighthawk is trained on recordings of nocturnal flight calls (NFCs) from the Ame
 
 Nighthawk runs in a Python environment. The underlying model was trained with [TensorFlow](tensorflow.org). 
 
-<!-- For details on Nighthawk training and performance, see the following [paper](https://doi.org/10.1101/541336): -->
+For details on Nighthawk training and performance, see the following [paper](https://www.biorxiv.org/content/10.1101/2023.05.22.541336):
 
-Van Doren, B. M., A. Farnsworth, K. Stone, D. M. Osterhaus, J. Drucker, and G. Van Horn. 2023. Nighthawk: acoustic monitoring of nocturnal bird migration in the Americas. 
-
-<!-- bioRxiv. doi:[10.1101/541336](https://doi.org/10.1101/541336). -->
+Van Doren, B. M., A. Farnsworth, K. Stone, D. M. Osterhaus, J. Drucker, and G. Van Horn. 2023. Nighthawk: acoustic monitoring of nocturnal bird migration in the Americas. bioRxiv. doi:[10.1101/2023.05.22.541336](https://www.biorxiv.org/content/10.1101/2023.05.22.541336).
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
 
@@ -151,21 +149,18 @@ Under this license, you are free to share and adapt this material, but you must 
   
 To reference Nighthawk, please use the following citation:
 
-Van Doren, B. M., A. Farnsworth, K. Stone, D. M. Osterhaus, J. Drucker, and G. Van Horn. 2023. Nighthawk: acoustic monitoring of nocturnal bird migration in the Americas. 
-
-<!-- bioRxiv. doi:[10.1101/541336](https://doi.org/10.1101/541336). 
+Van Doren, B. M., A. Farnsworth, K. Stone, D. M. Osterhaus, J. Drucker, and G. Van Horn. 2023. Nighthawk: acoustic monitoring of nocturnal bird migration in the Americas. bioRxiv. doi:[10.1101/2023.05.22.541336](https://www.biorxiv.org/content/10.1101/2023.05.22.541336).
 
 BibTex:
     
     @article{vandorenNighthawkAcousticMonitoring2023,
         title = {Nighthawk: acoustic monitoring of nocturnal bird migration in the Americas},
-        url = {https://www.biorxiv.org/content/10.1101/541336},
-        doi = {10.1101/541336},
+        url = {https://www.biorxiv.org/content/10.1101/2023.05.22.541336},
+        doi = {10.1101/2023.05.22.541336},
         journaltitle = {{bioRxiv}},
         author = {Van Doren, Benjamin M and Farnsworth, Andrew and Stone, Kate and Osterhaus, Dylan M and Drucker, Jacob and Van Horn, Grant},
         date = {2023},
     }
--->
 
 ## Code of Conduct
 

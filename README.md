@@ -135,7 +135,7 @@ to produce the output:
 You can also use Nighthawk from Vesper, for example if you would like to
 view and interact with spectrograms of its detections in Vesper clip albums.
 For more on this see the
-[Vesper documentation](https://vesper.readthedocs.io/en/latest/).
+[Vesper documentation](https://vesper.readthedocs.io/en/latest/faq.html#how-do-i-use-nighthawk-with-vesper).
 
 ## Improving Nighthawk by correcting mistakes
 

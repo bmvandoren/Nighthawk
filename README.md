@@ -52,12 +52,29 @@ and install the Nighthawk Python package and its dependencies:
 
     pip install nighthawk
 
+Finally, if (and only if) you're installing on an Apple computer
+with an Apple silicon (i.e. M1 or M2) processor, issue the following
+command:
+
+    conda list
+
+to list all of the Python packages that are now installed in your
+environment. If the list includes a package called `tensorflow`
+and not a package called `tensorflow-macos`, then uninstall the
+`tensorflow` package with:
+
+    pip uninstall tensorflow
+
+and install `tensorflow-macos` with:
+
+    pip install tensorflow-macos
+
 For more about `conda`, including additional `conda` commands, see its
 [documentation](https://docs.conda.io/projects/conda/en/stable/).
 
 ### `tensorflow-metal` for Apple Silicon Macs
 
-On Apple computers with Apple silicon (e.g. M1 and M2)
+On Apple computers with Apple silicon (i.e. M1 or M2)
 processors, installing the ``tensorflow-metal`` Python package
 into your Nighthawk Python environment with:
 

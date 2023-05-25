@@ -26,6 +26,39 @@
 #
 #     conda activate nighthawk-dev
 #     python -m twine upload dist/*
+#
+# Release checklist:
+#
+#     0. Test, test, test!
+#
+#     1. Update package version number below. Commit and push to GitHub repo.
+#
+#     2. Tag Git commit with version number. From the directory containing
+#        this file, do something like (but with the correct version number):
+#
+#            git tag v0.1.0               # creates tag in local repo
+#            git push origin v0.1.0       # pushes tag to GitHub repo
+#
+#        If for some reason you wind up wanting to move the tag to a
+#        different commit (you probably will some day):
+#
+#            git tag -d v0.1.0            # deletes tag from local repo
+#            git push origin :v0.1.0      # pushes tag deletion to GitHub repo
+#
+#     3. Build package (see commands above).
+#
+#     4. Upload package to PyPI (see commands above).
+#
+#     5. Sanity check installation and execution.
+#
+#     6. Create release in GitHub. Choose the tag created above for the
+#        release. Give the release the same name as the tag. Write
+#        release notes.
+#
+#     7. Update documentation if needed, including with new version
+#        number.
+#
+#     8. Announce.
 
 [build-system]
 requires = ['hatchling']

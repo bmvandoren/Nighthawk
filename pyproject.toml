@@ -33,7 +33,7 @@ build-backend = 'hatchling.build'
 
 [project]
 name = 'nighthawk'
-version = '0.1.0'
+version = '0.1.1'
 description = 'Nighthawk avian nocturnal flight call detector'
 readme = 'README.md'
 requires-python = '~=3.10.0'

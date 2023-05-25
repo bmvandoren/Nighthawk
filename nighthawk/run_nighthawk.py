@@ -24,7 +24,9 @@ def _parse_args():
     parser.add_argument(
         'input_file_paths',
         metavar='input_file_path',
-        help='path(s) to audio file(s) on which to run the detector. Accepts directories and wildcards.',
+        help=(
+            'path of audio file(s) on which to run the detector. '
+            'Accepts directories and wildcards.'),
         type=Path,
         nargs='+')
     

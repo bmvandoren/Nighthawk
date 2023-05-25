@@ -1,8 +1,10 @@
 """Functions and constants for the Nighthawk NFC detector."""
 
 
+import glob
 from pathlib import Path
 import time
+from typing import List
 
 import librosa
 import numpy as np
@@ -36,18 +38,27 @@ def run_detector_on_files(
         output_dir_path=DEFAULT_OUTPUT_DIR_PATH,
         mask_ap_threshold=DEFAULT_MASK_AP_THRESHOLD):
     
+    input_file_paths = _expand_paths(input_file_paths)
+    total_files = len(input_file_paths)
+    if total_files == 0:
+        print("No input files found.")
+        return
+
     print('Loading detector model...')
     model = _load_model()
 
     print('Getting detector configuration file paths...')
     config_file_paths = _get_configuration_file_paths()
 
-    for input_file_path in input_file_paths:
+    for ctr, input_file_path in enumerate(input_file_paths):
 
         # Make sure input file path is absolute for messages.
         input_file_path = input_file_path.absolute()
 
-        print(f'Running detector on audio file "{input_file_path}"...')
+        if len(input_file_paths) == 1:
+            print(f'Running detector on audio file "{input_file_path}"...')
+        else:
+            print(f'Running detector on audio file {ctr+1}/{total_files}: "{input_file_path}"...')
         
         detections = _run_detector_on_file(
             input_file_path, model, config_file_paths, hop_size, threshold,
@@ -63,6 +74,19 @@ def run_detector_on_files(
                 input_file_path, output_dir_path, '.txt')
             _write_detection_selection_table_file(output_file_path, detections)
 
+
+def _expand_paths(path_list: List[Path]) -> List[Path]:
+    """ If any wildcards or directories are supplied, expand them into a list of paths. """
+    expanded_paths = []
+    for path in path_list:
+        if path.is_dir():
+            expanded_paths.extend(path.glob('*'))
+        elif path.is_absolute():
+            expanded_paths.extend(path.parent.glob(path.name))
+        else:
+            expanded_paths.extend(Path.cwd().glob(str(path)))
+    return expanded_paths
+    
 
 def _load_model():
 

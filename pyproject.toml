@@ -47,18 +47,26 @@
 #
 #     3. Build package (see commands above).
 #
-#     4. Upload package to PyPI (see commands above).
+#     4. Upload package to PyPI test (see commands above).
 #
-#     5. Sanity check installation and execution.
+#     5. Sanity check installation and execution. Use the following command in a 
+#		 fresh environment to install from the test repository. The extra-index-url
+#		 argument looks in test.pypi.org but also allows pip to look outside too,
+#		 for installing dependencies.
 #
-#     6. Create release in GitHub. Choose the tag created above for the
+#			pip install --extra-index-url https://test.pypi.org/simple/ nighthawk=0.1.0
+#
+#     6. Upload package to PyPI prod (see commands above).	
+#
+#     7. Create release in GitHub. Choose the tag created above for the
 #        release. Give the release the same name as the tag. Write
 #        release notes.
 #
-#     7. Update documentation if needed, including with new version
-#        number.
+#     8. Update documentation if needed, including with new version
+#        number. (BVD: should this be done before uploading the package,
+#		 so the README contains the correct version number?)
 #
-#     8. Announce.
+#     9. Announce.
 
 [build-system]
 requires = ['hatchling']

@@ -3,7 +3,9 @@
 dist/
 .ipynb_checkpoints
 .vscode/
-test_inputs/Ithaca*
+test_inputs/*
 test_outputs/
 instructions/feedback/model_feedback.html
 nighthawk/model_load_from_saved.ipynb
+test_inputs/Feedback.txt
+instructions/feedback/model_feedback_raven.html

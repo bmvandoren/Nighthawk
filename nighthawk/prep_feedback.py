@@ -9,6 +9,7 @@ import tarfile
 
 import librosa
 import pandas as pd
+import numpy as np
 import yaml
 import soundfile as sf
 
@@ -20,21 +21,24 @@ UPDATE_COL = 'category_update'
 VOC_COL = 'voc_type_update'
 
 EXPECTED_COLUMNS = [
-    "Selection","View",     "Channel",  "Begin Time (s)",
-    "End Time (s)",    "Low Freq (Hz)", "High Freq (Hz)",
-    "Begin File",      "path",     "order",   
-    "prob_order",      "family",   "prob_family",     "group",   
-    "prob_group",      "species",  "prob_species",    "predicted_category",   
-    "prob",
+    #"Selection","View",     "Channel",  
+    "Begin Time (s)","End Time (s)",    "Low Freq (Hz)", "High Freq (Hz)",
+    #"Begin File",      "path",     "order",   
+    #"prob_order",      "family",   "prob_family",     "group",   
+    #"prob_group",      "species",  "prob_species",    "predicted_category",   
+    #"prob",
     UPDATE_COL # special one
   ]
-ALLOWED_COLUMNS = EXPECTED_COLUMNS + [VOC_COL, "comment"]
+# ALLOWED_COLUMNS = EXPECTED_COLUMNS + [VOC_COL, "comment"]
 
 CONFIRM_CODES = ['c','y',"C","Y"]
 BACKGROUND_CODES = ['n','N','bg',"BG",'background']
 UNKNOWN_CODES = ['unknown']
 
 VOC_CODES = ['fc','fc-song','fc-long','call','song','other']
+
+# create a temporary txt file
+TMP_TXT_FP = tempfile.NamedTemporaryFile(suffix=".txt")
 
 def main():
 
@@ -146,6 +150,40 @@ def _load_taxonomy(taxonomy_fp,group_map_fp,ibp_fp):
     
     return taxonomy_df
 
+
+def _format_audacity_as_raven(txt_df):
+
+    txt_df['Low Freq (Hz)'] = pd.NA
+    txt_df['High Freq (Hz)'] = pd.NA
+
+    # extract out frequency rows if present
+    is_freq = txt_df.iloc[:,0]=='\\'
+    if any(is_freq):
+        # get corresponding time rows
+        corresponding_rows = np.where(is_freq)[0]-1
+        # make df with just frequency rows
+        freq_df = txt_df[is_freq].iloc[:,[1,2]].copy()
+        
+        pd.set_option('mode.chained_assignment',None)
+        txt_df['Low Freq (Hz)'][corresponding_rows] = freq_df.iloc[:,0]
+        txt_df['High Freq (Hz)'][corresponding_rows] = freq_df.iloc[:,1]
+        txt_df = txt_df[~is_freq]
+
+        # convert necessary columns to numeric; raise error if there are strings present
+        txt_df['Begin Time (s)'] = pd.to_numeric(txt_df['Begin Time (s)'], errors='raise')
+        txt_df['End Time (s)'] = pd.to_numeric(txt_df['End Time (s)'], errors='raise')
+        txt_df['Low Freq (Hz)'] = pd.to_numeric(txt_df['Low Freq (Hz)'], errors='raise')
+        txt_df['High Freq (Hz)'] = pd.to_numeric(txt_df['High Freq (Hz)'], errors='raise')
+
+    return(txt_df)    
+
+def is_float(string):
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+        
 def _check_audio_and_txt(args):
 
     # get duration of audio file
@@ -154,6 +192,16 @@ def _check_audio_and_txt(args):
     # read txt file
     txt_df = pd.read_csv(args.txt_path, sep='\t')
 
+    if is_float(txt_df.columns[0]) & is_float(txt_df.columns[1]):
+        print("\nAudacity txt file detected.")
+    
+        columns_header = ['Begin Time (s)','End Time (s)','category_update']
+        txt_df = pd.read_csv(args.txt_path, sep='\t', header=None,names=columns_header)
+        
+        txt_df = _format_audacity_as_raven(txt_df) 
+    else:
+        print("\nRaven txt file detected.")
+
     # make sure all expected columns are present
     txt_cols = txt_df.columns.tolist()
     if not all(i in txt_cols for i in EXPECTED_COLUMNS):
@@ -161,9 +209,9 @@ def _check_audio_and_txt(args):
         assert False, "Missing column(s) in txt file: " + ', '.join(missing_cols)
 
     # make sure any additional columns are only the allowed ones
-    if not all(i in ALLOWED_COLUMNS for i in txt_cols):
-        forbidden_cols = [i for i in txt_cols if i not in ALLOWED_COLUMNS]
-        assert False, "Unrecognized column(s) in txt file: " + ', '.join(forbidden_cols)
+    # if not all(i in ALLOWED_COLUMNS for i in txt_cols):
+    #     forbidden_cols = [i for i in txt_cols if i not in ALLOWED_COLUMNS]
+    #     assert False, "Unrecognized column(s) in txt file: " + ', '.join(forbidden_cols)
 
     # make sure entries in UPDATE_COL are recognized 
         
@@ -184,7 +232,10 @@ def _check_audio_and_txt(args):
     ibp_codes = taxonomy_df['ibp_code'].dropna().unique().tolist()
     
     taxa = species + groups + families + orders + ibp_codes
-    allowed_update_entries = taxa + CONFIRM_CODES + BACKGROUND_CODES + UNKNOWN_CODES
+    allowed_update_entries = taxa + BACKGROUND_CODES + UNKNOWN_CODES
+    # only allow confirm codes if 'predicted_category' also present
+    if 'predicted_category' in txt_cols:
+        allowed_update_entries = allowed_update_entries + CONFIRM_CODES
 
     update_entries_lower_uniq = txt_df[UPDATE_COL].dropna()
     if len(update_entries_lower_uniq)>0:
@@ -219,6 +270,10 @@ def _check_audio_and_txt(args):
 
     # make sure no selections are longer than file duration
     assert txt_df['End Time (s)'].max() <= audio_duration, "there are selections beyond the length of the audio file"
+
+    # write txt_df to TMP_TXT_FP
+    txt_df.to_csv(TMP_TXT_FP, sep='\t', index=False)
+     
 
 def get_output_filename(args):
 
@@ -297,7 +352,9 @@ def save_archive(args,out_fn,gz=True):
             open_tmpfile = False
         else:
             tar.add(args.audio_path,arcname=out_fn + '.wav')
-        tar.add(args.txt_path,arcname=out_fn + '.txt')
+        # tar.add(args.txt_path,arcname=out_fn + '.txt')
+        tar.add(TMP_TXT_FP.name,arcname=out_fn + '.txt')
+        TMP_TXT_FP.close()
         tar.add(args.yaml_path,arcname=out_fn + '.yml')    
 
     print(f'Done. Please send this file to Nighthawk developers.\n')

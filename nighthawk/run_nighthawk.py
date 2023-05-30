@@ -14,7 +14,8 @@ def main():
     nh.run_detector_on_files(
         args.input_file_paths, args.hop_size, args.threshold,
         args.merge_overlaps, args.drop_uncertain, args.csv_output,
-        args.raven_output, args.output_dir_path)
+        args.raven_output, args.audacity_output,
+        args.output_dir_path)
     
 
 def _parse_args():
@@ -67,6 +68,12 @@ def _parse_args():
         help='output detections to a Raven selection table file.',
         action=BooleanOptionalAction,
         default=nh.DEFAULT_RAVEN_OUTPUT)
+
+    parser.add_argument(
+        '--audacity-output',
+        help='output detections to an Audacity label file.',
+        action=BooleanOptionalAction,
+        default=nh.DEFAULT_AUDACITY_OUTPUT)    
 
     parser.add_argument(
         '--output-dir',

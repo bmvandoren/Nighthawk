@@ -22,17 +22,17 @@ In Audacity, use File -\> Open and choose the input audio file (in this case, `t
 
 Make a new track to add your feedback. Right-click on empty space in the Audacity window and choose "Add Label Track." Name your label track "Feedback."
 
-![](assets/add_label_track.png){width="40%"}
+<img src="assets/add_label_track.png" width="40%"/>
 
 Your Audacity window will look something like this:
 
-![](assets/audacity_w_feedback_track.png){width="80%"}
+<img src="assets/audacity_w_feedback_track.png" width="80%"/>
 
 ## Step 3: Open Nighthawk detections in Audacity
 
 Use File -\> Import -\> Labels...and choose the corresponding `…audacity.txt` output (in this case, `test3_audacity.txt)`. This will add a second label track with Nighthawk's predictions. Your Audacity window will now look like this:
 
-![](assets/audacity_feedback_and_predictions.png){width="80%"}
+<img src="assets/audacity_feedback_and_predictions.png" width="80%"/>
 
 Note: if you loaded detections before creating the Feedback label track, make sure to drag the Feedback track so it is the uppermost label track.
 
@@ -58,7 +58,7 @@ If any Nighthawk detections actually contain no flight calls, create a label in 
 
 The detection in question:
 
-![](assets/audacity_n_box.png){width="80%"}
+<img src="assets/audacity_n_box.png" width="80%"/>
 
 Nighthawk thinks there is a Parulidae (warbler) call here, but we don't see an obvious call. We can mark this in two ways:
 
@@ -68,11 +68,11 @@ Nighthawk thinks there is a Parulidae (warbler) call here, but we don't see an o
 
 We enter `n` in the text field column to specify that there are *no* flight calls in this selection:
 
-![](assets/audacity_n.png){width="60%"}
+<img src="assets/audacity_n.png" width="60%"/>
 
 Our Audacity window now looks like this, with a brand new annotation in the `Feedback` track:
 
-![](assets/audacity_n_box_entered.png){width="80%"}
+<img src="assets/audacity_n_box_entered.png" width="80%"/>
 
 ### Correct, confirm, or add identifications by drawing a new box in the `Feedback` track
 
@@ -92,15 +92,15 @@ For Nighthawk detections that you want to confirm, correct, or add, do the follo
 
 The detection(s) in question:
 
-![](assets/audacity_to_box_1.png){width="80%"}
+<img src="assets/audacity_to_box_1.png" width="80%"/>
 
 Nighthawk thinks there is a Veery call here, and also a Parulid or two. We agree. We first draw a box around the Veery call:
 
-![](assets/audacity_to_box_2.png){width="80%"}
+<img src="assets/audacity_to_box_2.png" width="80%"/>
 
 Since there is a Parulid call in close proximity (\< 1.5 s) from the Veery, we also have to draw a box around that one, too:
 
-![](assets/audacity_to_box_3.png){width="80%"}
+<img src="assets/audacity_to_box_3.png" width="80%"/>
 
 **IMPORTANT**: DO NOT add selections for vocalizations that are not flight calls.
 

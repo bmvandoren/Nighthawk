@@ -8,7 +8,7 @@ When Nighthawk makes an incorrect classification, submitting feedback will help 
 
 [View Audacity feedback instructions](model_feedback_audacity.md).
 
-## FAQ {#faq}
+## FAQ
 
 ### Do I need to review an entire file in order to submit feedback?
 

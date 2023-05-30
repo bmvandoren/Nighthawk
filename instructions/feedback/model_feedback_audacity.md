@@ -6,7 +6,7 @@ Prefer Raven instead? [View Raven Pro feedback instructions](model_feedback_rave
 
 ## Step 1: Run Nighthawk with `--audacity-output`.
 
-Run Nighthawk across a file and output a Raven selection table with the `--audacity-output` flag. Here, we do this on the test3.wav file included in this repository.
+Run Nighthawk across a file and output an Audacity label track file with the `--audacity-output` flag. Here, we do this on the test3.wav file included in this repository.
 
 ```         
 nighthawk test_inputs/test3.wav --audacity-output

@@ -106,7 +106,7 @@ Since there is a Parulid call in close proximity (\< 1.5 s) from the Veery, we a
 
 ## Step 5: Export the `Feedback` label track
 
-Once you are finished reviewing a file, make export the `Feedback` label track with your selections. Make sure to close the Nighthawk detection track first. Then, choose File -\> Export -\> Export Labels.... The suggested name should be `Feedback.txt`. (If it isn't, you may have forgotten to close the Nighthawk predictions track.) Pick an informative name (e.g. in our case `test3_audacity_feedback.txt`) and save the file.
+Once you are finished reviewing a file, export the `Feedback` label track with your selections. Make sure to close the Nighthawk detection track first. Then, choose File -\> Export -\> Export Labels.... The suggested name should be `Feedback.txt`. (If it isn't, you may have forgotten to close the Nighthawk predictions track.) Pick an informative name (e.g. in our case `test3_audacity_feedback.txt`) and save the file.
 
 ## Step 6. Record metadata in a .yml file, and run `prep_nighthawk` to compile feedback files.
 
@@ -150,6 +150,8 @@ This outputs the following:
 ```         
 NOTE: Please ensure that the recording start time entered
 in your YAML file is in Universal Coordinated Time (UTC).
+
+Audacity txt file detected.
 
 Checks passed.
 Writing archive BENJAMINVANDOREN_ITHACA-HOUSE_42.44_-76.50_20230511_011600_Z.tar.gz.

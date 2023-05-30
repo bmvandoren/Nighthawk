@@ -22,7 +22,7 @@ In Audacity, use File -\> Open and choose the input audio file (in this case, `t
 
 Adjust your Audacity preferences so that Audacity exports frequency ranges for labels. This will ensure that your saved labels include frequency ranges:
 
-<img src="assets/audacity_export_setting.png.png" width="70%"/>
+<img src="assets/audacity_export_setting.png" width="70%"/>
 
 ## Step 3: Add a label track for feedback.
 

@@ -36,6 +36,11 @@ Use File -\> Import -\> Labels...and choose the corresponding `…audacity.txt` 
 
 Note: if you loaded detections before creating the Feedback label track, make sure to drag the Feedback track so it is the uppermost label track.
 
+### Exploring Nighthawk detections
+
+You can make use of some helpful keyboard shortcuts to jump between labels in the Nighthawk detection track. On Windows, use Alt+Left and Alt+Right. On Mac, use Option+Left and Option+Right.
+
+
 ## Step 4: Specify feedback in the `Feedback` label track.
 
 There are four types of feedback you can provide: (1) specifying false positives; (2) correcting any incorrect identifications; (3) confirming Nighthawk's identifications; and (4) adding missing detections. Any of these are helpful - you can provide one, two, or all types of feedback. For example, you can provide feedback on only false positives (and not confirm, correct, or add anything).
@@ -106,7 +111,10 @@ Since there is a Parulid call in close proximity (\< 1.5 s) from the Veery, we a
 
 ## Step 5: Export the `Feedback` label track
 
-Once you are finished reviewing a file, export the `Feedback` label track with your selections. Make sure to close the Nighthawk detection track first. Then, choose File -\> Export -\> Export Labels.... The suggested name should be `Feedback.txt`. (If it isn't, you may have forgotten to close the Nighthawk predictions track.) Pick an informative name (e.g. in our case `test3_audacity_feedback.txt`) and save the file.
+Once you are finished reviewing a file:
+
+1. **Close the Nighthawk detection track so that the `Feedback` track is the only label track present.**
+2. Export the remaining `Feedback` label track with your selections. To do this, choose File -\> Export -\> Export Labels.... The suggested name should be `Feedback.txt`. (If it isn't, you may have forgotten to close the Nighthawk predictions track.) Pick an informative name (e.g. in our case `test3_audacity_feedback.txt`) and save the file.
 
 ## Step 6. Record metadata in a .yml file, and run `prep_nighthawk` to compile feedback files.
 

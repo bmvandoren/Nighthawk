@@ -102,7 +102,7 @@ Since there is a Parulid call in close proximity (\< 1.5 s) from the Veery, we a
 
 <img src="assets/audacity_to_box_3.png" width="80%"/>
 
-**IMPORTANT**: DO NOT add selections for vocalizations that are not flight calls.
+**IMPORTANT**: DO NOT add selections for vocalizations that are not flight calls, unless they are `n` selections (indicating no flight calls).
 
 ## Step 5: Export the `Feedback` label track
 

@@ -189,6 +189,8 @@ This outputs the following:
 NOTE: Please ensure that the recording start time entered
 in your YAML file is in Universal Coordinated Time (UTC).
 
+Raven txt file detected.
+
 Checks passed.
 Writing archive BENJAMINVANDOREN_ITHACA-HOUSE_42.44_-76.50_20230511_011600_Z.tar.gz.
 

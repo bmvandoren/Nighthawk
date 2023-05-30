@@ -18,6 +18,12 @@ This command creates the output files `test_inputs/test3_audacity.txt` and `test
 
 In Audacity, use File -\> Open and choose the input audio file (in this case, `test3.wav`). Open a spectrogram view with your favored parameters.
 
+### Include low/high frequencies in Audacity exports
+
+Adjust your Audacity preferences so that Audacity exports frequency ranges for labels. This will ensure that your saved labels include frequency ranges:
+
+<img src="assets/audacity_export_setting.png.png" width="70%"/>
+
 ## Step 3: Add a label track for feedback.
 
 Make a new track to add your feedback. Right-click on empty space in the Audacity window and choose "Add Label Track." Name your label track "Feedback."

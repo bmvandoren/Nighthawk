@@ -326,7 +326,7 @@ def save_archive(args,txt_df,out_fn,gz=True):
         audio_sr = librosa.get_samplerate(path=args.audio_path)
 
         if audio_sr != TARGET_SR:
-            print(f'\nInput audio has sample rate {audio_sr} Hz. Resampling to {TARGET_SR} Hz.\n')
+            print(f'Input audio has sample rate {audio_sr} Hz. Resampling to {TARGET_SR} Hz.\n')
     
             y, sr_orig = librosa.load(args.audio_path,sr=None,mono=True) 
     

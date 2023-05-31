@@ -337,6 +337,7 @@ def save_archive(args,txt_df,out_fn,gz=True):
             # create a temporary file and write it to the tar
             # tmp_fp = tempfile.NamedTemporaryFile(suffix=".wav")
             with tempfile.NamedTemporaryFile(suffix=".wav",dir=temp_dir) as tmp_wav_fp:
+                print("tmpfile: ",tmp_wav_fp.name)
                 sf.write(tmp_wav_fp.name, y_resamp, TARGET_SR, 'PCM_16',closefd=False)
                 tar.add(tmp_wav_fp.name,arcname=out_fn + '.wav')
         else:
@@ -345,6 +346,7 @@ def save_archive(args,txt_df,out_fn,gz=True):
 
         # create a temporary txt file and write it to tar
         with tempfile.NamedTemporaryFile(suffix=".txt",dir=temp_dir) as tmp_txt_fp:
+            print("tmpfile: ",tmp_txt_fp.name)
             txt_df.to_csv(tmp_txt_fp.name, sep='\t', index=False)
             tar.add(tmp_txt_fp.name,arcname=out_fn + '.txt')
         

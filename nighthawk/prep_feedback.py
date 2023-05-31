@@ -347,7 +347,7 @@ def save_archive(args,txt_df,out_fn,gz=True):
         # create a temporary txt file and write it to tar
         with tempfile.NamedTemporaryFile(suffix=".txt",dir=temp_dir) as tmp_txt_fp:
             print("tmpfile: ",tmp_txt_fp.name)
-            txt_df.to_csv(tmp_txt_fp.name, sep='\t', index=False,mode="+")
+            txt_df.to_csv(tmp_txt_fp.name, sep='\t', index=False,mode="w+")
             tar.add(tmp_txt_fp.name,arcname=out_fn + '.txt')
         
         tar.add(args.yaml_path,arcname=out_fn + '.yml')    

@@ -338,15 +338,15 @@ def save_archive(args,txt_df,out_fn,gz=True):
             # create a temporary file and write it to the tar
             # tmp_fp = tempfile.NamedTemporaryFile(suffix=".wav")
             tmp_wav_fp = tempfile.NamedTemporaryFile(suffix=".wav",delete=False)
-            print("tmpfile: ",tmp_wav_fp.name)
-            print("tmpfile exists before writing?:",os.path.exists(tmp_wav_fp.name))
+            # print("tmpfile: ",tmp_wav_fp.name)
+            # print("tmpfile exists before writing?:",os.path.exists(tmp_wav_fp.name))
             sf.write(tmp_wav_fp.name, y_resamp, TARGET_SR, 'PCM_16',closefd=False)
             tar.add(tmp_wav_fp.name,arcname=out_fn + '.wav')
-            print("tmpfile exists after writing?:",os.path.exists(tmp_wav_fp.name))
+            # print("tmpfile exists after writing?:",os.path.exists(tmp_wav_fp.name))
             tmp_wav_fp.close()
-            print("tmpfile exists after closing?:",os.path.exists(tmp_wav_fp.name))
+            # print("tmpfile exists after closing?:",os.path.exists(tmp_wav_fp.name))
             os.remove(tmp_wav_fp.name)
-            print("tmpfile exists after removing?:",os.path.exists(tmp_wav_fp.name))
+            # print("tmpfile exists after removing?:",os.path.exists(tmp_wav_fp.name))
                         
         else:
             tar.add(args.audio_path,arcname=out_fn + '.wav')
@@ -354,15 +354,15 @@ def save_archive(args,txt_df,out_fn,gz=True):
 
         # create a temporary txt file and write it to tar
         tmp_txt_fp = tempfile.NamedTemporaryFile(suffix=".txt",delete=False)
-        print("tmpfile: ",tmp_txt_fp.name)
-        print("tmpfile exists before writing?:",os.path.exists(tmp_txt_fp.name))
+        # print("tmpfile: ",tmp_txt_fp.name)
+        # print("tmpfile exists before writing?:",os.path.exists(tmp_txt_fp.name))
         txt_df.to_csv(tmp_txt_fp.name, sep='\t', index=False,mode="w+")
         tar.add(tmp_txt_fp.name,arcname=out_fn + '.txt')
-        print("tmpfile exists after writing?:",os.path.exists(tmp_txt_fp.name))
+        # print("tmpfile exists after writing?:",os.path.exists(tmp_txt_fp.name))
         tmp_txt_fp.close()
-        print("tmpfile exists after closing?:",os.path.exists(tmp_txt_fp.name))
+        # print("tmpfile exists after closing?:",os.path.exists(tmp_txt_fp.name))
         os.remove(tmp_txt_fp.name)
-        print("tmpfile exists after removing?:",os.path.exists(tmp_txt_fp.name))
+        # print("tmpfile exists after removing?:",os.path.exists(tmp_txt_fp.name))
         
         tar.add(args.yaml_path,arcname=out_fn + '.yml')    
     

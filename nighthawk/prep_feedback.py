@@ -37,9 +37,6 @@ UNKNOWN_CODES = ['unknown']
 
 VOC_CODES = ['fc','fc-song','fc-long','call','song','other']
 
-# create a temporary txt file
-TMP_TXT_FP = tempfile.NamedTemporaryFile(suffix=".txt")
-
 def main():
 
     print("\nNOTE: Please ensure that the recording start time entered\nin your YAML file is in Universal Coordinated Time (UTC).")
@@ -50,7 +47,7 @@ def main():
     args = _check_paths(args)
 
     # check audio and selection table
-    _check_audio_and_txt(args)
+    txt_df = _check_audio_and_txt(args)
 
     # print(args)  
 
@@ -59,7 +56,7 @@ def main():
 
     print("\nChecks passed.")
     # copy and rename files and make an archive
-    save_archive(args,out_filename,gz=True)   
+    save_archive(args,txt_df,out_filename,gz=True)   
     
 
 def _parse_args():
@@ -271,8 +268,7 @@ def _check_audio_and_txt(args):
     # make sure no selections are longer than file duration
     assert txt_df['End Time (s)'].max() <= audio_duration, "there are selections beyond the length of the audio file"
 
-    # write txt_df to TMP_TXT_FP
-    txt_df.to_csv(TMP_TXT_FP, sep='\t', index=False)
+    return txt_df
      
 
 def get_output_filename(args):
@@ -308,7 +304,7 @@ def get_output_filename(args):
     return output_basename
 
 
-def save_archive(args,out_fn,gz=True):
+def save_archive(args,txt_df,out_fn,gz=True):
     
     if gz:
         mode = 'w:gz'
@@ -319,43 +315,38 @@ def save_archive(args,out_fn,gz=True):
 
     archive_out_fp = args.output_dir_path.joinpath(out_fn + ext)
 
-
-    # get sample rate of audio file
-    audio_sr = librosa.get_samplerate(path=args.audio_path)
-
-    open_tmpfile = False
-    if audio_sr != TARGET_SR:
-        print(f'\nInput audio has sample rate {audio_sr} Hz. Resampling to {TARGET_SR} Hz.\n')
-
-        y, sr_orig = librosa.load(args.audio_path,sr=None,mono=True) 
-
-        y_resamp = librosa.resample(y=y, 
-                                    orig_sr=sr_orig, 
-                                    target_sr=TARGET_SR, 
-                                    res_type='soxr_hq') # soxr_hq determined best by Harold
-
-        # create a temporary file
-        tmp_fp = tempfile.NamedTemporaryFile(suffix=".wav")
-        open_tmpfile = True
-        # print("tmp_fp before writing file:",tmp_fp.name)
-        sf.write(tmp_fp.name, y_resamp, TARGET_SR, 'PCM_16')
-    
-
-    print(f'Writing archive {archive_out_fp}.\n')
-
     with tarfile.open(archive_out_fp, mode) as tar:
-        # add audio
-        if open_tmpfile: # if we converted
-            # print("tmp_fp before writing archive:",tmp_fp.name)
-            tar.add(tmp_fp.name,arcname=out_fn + '.wav')
-            tmp_fp.close()
-            open_tmpfile = False
+        print(f'Writing archive {archive_out_fp}.\n')
+
+        # get sample rate of audio file
+        audio_sr = librosa.get_samplerate(path=args.audio_path)
+
+        if audio_sr != TARGET_SR:
+            print(f'\nInput audio has sample rate {audio_sr} Hz. Resampling to {TARGET_SR} Hz.\n')
+    
+            y, sr_orig = librosa.load(args.audio_path,sr=None,mono=True) 
+    
+            y_resamp = librosa.resample(y=y, 
+                                        orig_sr=sr_orig, 
+                                        target_sr=TARGET_SR, 
+                                        res_type='soxr_hq') # soxr_hq determined best by Harold
+    
+            # create a temporary file and write it to the tar
+            # tmp_fp = tempfile.NamedTemporaryFile(suffix=".wav")
+            with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_wav_fp:
+                sf.write(tmp_wav_fp.name, y_resamp, TARGET_SR, 'PCM_16',closefd=False)
+                tar.add(tmp_wav_fp.name,arcname=out_fn + '.wav')
         else:
             tar.add(args.audio_path,arcname=out_fn + '.wav')
         # tar.add(args.txt_path,arcname=out_fn + '.txt')
-        tar.add(TMP_TXT_FP.name,arcname=out_fn + '.txt')
-        TMP_TXT_FP.close()
+
+        # create a temporary txt file and write it to tar
+        with tempfile.NamedTemporaryFile(suffix=".txt") as tmp_txt_fp:
+            txt_df.to_csv(tmp_txt_fp.name, sep='\t', index=False)
+            tar.add(tmp_txt_fp.name,arcname=out_fn + '.txt')
+        
         tar.add(args.yaml_path,arcname=out_fn + '.yml')    
+    
 
     print(f'Done. Please send this file to Nighthawk developers.\n')
 

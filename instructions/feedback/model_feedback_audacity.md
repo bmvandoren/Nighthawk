@@ -122,7 +122,7 @@ Once you are finished reviewing a file:
 1. **Close the Nighthawk detection track so that the `Feedback` track is the only label track present.**
 2. Export the remaining `Feedback` label track with your selections. To do this, choose File -\> Export -\> Export Labels.... The suggested name should be `Feedback.txt`. (If it isn't, you may have forgotten to close the Nighthawk predictions track.) Pick an informative name (e.g. in our case `test3_audacity_feedback.txt`) and save the file.
 
-## Step 6. Record metadata in a .yml file, and run `prep_nighthawk` to compile feedback files.
+## Step 6. Record metadata in a .yml file, and run `prep_feedback` to compile feedback files.
 
 Create a new YAML file with metadata about the recording. A YAML file is simply a text file with a particular formatting. Use `test3.yml` as a template. The contents of that file are shown here for easy reference.
 

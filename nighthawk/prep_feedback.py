@@ -348,9 +348,15 @@ def save_archive(args,txt_df,out_fn,gz=True):
         # create a temporary txt file and write it to tar
         tmp_txt_fp = tempfile.NamedTemporaryFile(suffix=".txt",dir=temp_dir,delete=False)
         print("tmpfile: ",tmp_txt_fp.name)
-        print("tmpfile exists?:",os.path.exists(tmp_txt_fp.name))
+        print("tmpfile exists before writing?:",os.path.exists(tmp_txt_fp.name))
         txt_df.to_csv(tmp_txt_fp.name, sep='\t', index=False,mode="w+")
         tar.add(tmp_txt_fp.name,arcname=out_fn + '.txt')
+        print("tmpfile exists after writing?:",os.path.exists(tmp_txt_fp.name))
+        tmp_txt_fp.close()
+        print("tmpfile exists after closing?:",os.path.exists(tmp_txt_fp.name))
+        tmp_txt_fp.close()
+        os.remove(tmp_txt_fp.name)
+        print("tmpfile exists after removing?:",os.path.exists(tmp_txt_fp.name))
         
         tar.add(args.yaml_path,arcname=out_fn + '.yml')    
     

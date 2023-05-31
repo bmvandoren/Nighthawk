@@ -146,7 +146,7 @@ We add our ID to the `category_update` column:
 
 <img src="assets/new_parulidae.png" width="30%"/>
 
-## Step 5: Save selection table, record metadata in a .yml file, and run `prep_nighthawk` to compile feedback files.
+## Step 5: Save selection table, record metadata in a .yml file, and run `prep_feedback` to compile feedback files.
 
 Once you are finished reviewing a file, make sure to save the selection table (.txt file). Then, create a new YAML file with metadata about the recording. A YAML file is simply a text file with a particular formatting. Use `test3.yml` as a template. The contents of that file are shown here for easy reference.
 

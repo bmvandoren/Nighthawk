@@ -315,6 +315,9 @@ def save_archive(args,txt_df,out_fn,gz=True):
 
     archive_out_fp = args.output_dir_path.joinpath(out_fn + ext)
 
+    # use output dir for temporary files
+    temp_dir = args.output_dir_path
+
     with tarfile.open(archive_out_fp, mode) as tar:
         print(f'Writing archive {archive_out_fp}.\n')
 
@@ -333,7 +336,7 @@ def save_archive(args,txt_df,out_fn,gz=True):
     
             # create a temporary file and write it to the tar
             # tmp_fp = tempfile.NamedTemporaryFile(suffix=".wav")
-            with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_wav_fp:
+            with tempfile.NamedTemporaryFile(suffix=".wav",dir=temp_dir) as tmp_wav_fp:
                 sf.write(tmp_wav_fp.name, y_resamp, TARGET_SR, 'PCM_16',closefd=False)
                 tar.add(tmp_wav_fp.name,arcname=out_fn + '.wav')
         else:
@@ -341,7 +344,7 @@ def save_archive(args,txt_df,out_fn,gz=True):
         # tar.add(args.txt_path,arcname=out_fn + '.txt')
 
         # create a temporary txt file and write it to tar
-        with tempfile.NamedTemporaryFile(suffix=".txt") as tmp_txt_fp:
+        with tempfile.NamedTemporaryFile(suffix=".txt",dir=temp_dir) as tmp_txt_fp:
             txt_df.to_csv(tmp_txt_fp.name, sep='\t', index=False)
             tar.add(tmp_txt_fp.name,arcname=out_fn + '.txt')
         

@@ -20,6 +20,7 @@ DEFAULT_MERGE_OVERLAPS = True
 DEFAULT_DROP_UNCERTAIN = True
 DEFAULT_CSV_OUTPUT = True
 DEFAULT_RAVEN_OUTPUT = False
+DEFAULT_AUDACITY_OUTPUT = False
 DEFAULT_OUTPUT_DIR_PATH = None
 
 _PACKAGE_DIR_PATH = Path(__file__).parent
@@ -33,6 +34,7 @@ def run_detector_on_files(
         threshold=DEFAULT_THRESHOLD, merge_overlaps=DEFAULT_MERGE_OVERLAPS,
         drop_uncertain=DEFAULT_DROP_UNCERTAIN, csv_output=DEFAULT_CSV_OUTPUT,
         raven_output=DEFAULT_RAVEN_OUTPUT,
+        audacity_output=DEFAULT_AUDACITY_OUTPUT,
         output_dir_path=DEFAULT_OUTPUT_DIR_PATH,
         mask_ap_threshold=DEFAULT_MASK_AP_THRESHOLD):
     
@@ -71,8 +73,13 @@ def run_detector_on_files(
 
         if raven_output:
             output_file_path = _prep_for_output(
-                input_file_path, output_dir_path, '.txt')
+                input_file_path, output_dir_path, '.txt',  descriptor='raven')
             _write_detection_selection_table_file(output_file_path, detections)
+
+        if audacity_output:
+            output_file_path = _prep_for_output(
+                input_file_path, output_dir_path, '.txt',  descriptor='audacity')
+            _write_detection_audacity_label_file(output_file_path, detections)
 
 
 def _expand_paths(paths):
@@ -222,12 +229,12 @@ def _report_processing_speed(file_path, elapsed_time):
         f'seconds, {rate:.1f} times faster than real time.')
 
 
-def _prep_for_output(input_file_path, output_dir_path, file_name_suffix):
+def _prep_for_output(input_file_path, output_dir_path, file_name_suffix, descriptor='detections'):
 
     # Get output file path.
     if output_dir_path is None:
         output_dir_path = input_file_path.parent
-    file_name = f'{input_file_path.stem}_detections{file_name_suffix}'
+    file_name = f'{input_file_path.stem}_{descriptor}{file_name_suffix}'
     file_path = output_dir_path / file_name
 
     print(f'Writing output file "{file_path}"...')
@@ -261,6 +268,15 @@ def _write_detection_selection_table_file(file_path, detections):
           value = 11025)    
 
     selections.to_csv(file_path, index=False, na_rep='', sep ='\t')
+
+
+def _write_detection_audacity_label_file(file_path, detections):
+
+    detections['pred_cat_prob'] = detections['predicted_category'] + ' (' + detections['prob'].astype(float).round(3).astype(str) + ')'
+    
+    aud_df = detections[['start_sec','end_sec','pred_cat_prob']].copy()
+
+    aud_df.to_csv(file_path, index=False, na_rep='', sep ='\t',header=False)
 
 
 class _Bunch:

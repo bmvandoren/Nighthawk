@@ -6,9 +6,11 @@ from pathlib import Path
 from datetime import datetime
 import tempfile
 import tarfile
+import os
 
 import librosa
 import pandas as pd
+import numpy as np
 import yaml
 import soundfile as sf
 
@@ -20,15 +22,15 @@ UPDATE_COL = 'category_update'
 VOC_COL = 'voc_type_update'
 
 EXPECTED_COLUMNS = [
-    "Selection","View",     "Channel",  "Begin Time (s)",
-    "End Time (s)",    "Low Freq (Hz)", "High Freq (Hz)",
-    "Begin File",      "path",     "order",   
-    "prob_order",      "family",   "prob_family",     "group",   
-    "prob_group",      "species",  "prob_species",    "predicted_category",   
-    "prob",
+    #"Selection","View",     "Channel",  
+    "Begin Time (s)","End Time (s)",    "Low Freq (Hz)", "High Freq (Hz)",
+    #"Begin File",      "path",     "order",   
+    #"prob_order",      "family",   "prob_family",     "group",   
+    #"prob_group",      "species",  "prob_species",    "predicted_category",   
+    #"prob",
     UPDATE_COL # special one
   ]
-ALLOWED_COLUMNS = EXPECTED_COLUMNS + [VOC_COL, "comment"]
+# ALLOWED_COLUMNS = EXPECTED_COLUMNS + [VOC_COL, "comment"]
 
 CONFIRM_CODES = ['c','y',"C","Y"]
 BACKGROUND_CODES = ['n','N','bg',"BG",'background']
@@ -46,7 +48,7 @@ def main():
     args = _check_paths(args)
 
     # check audio and selection table
-    _check_audio_and_txt(args)
+    txt_df = _check_audio_and_txt(args)
 
     # print(args)  
 
@@ -55,7 +57,7 @@ def main():
 
     print("\nChecks passed.")
     # copy and rename files and make an archive
-    save_archive(args,out_filename,gz=True)   
+    save_archive(args,txt_df,out_filename,gz=True)   
     
 
 def _parse_args():
@@ -146,6 +148,40 @@ def _load_taxonomy(taxonomy_fp,group_map_fp,ibp_fp):
     
     return taxonomy_df
 
+
+def _format_audacity_as_raven(txt_df):
+
+    txt_df['Low Freq (Hz)'] = pd.NA
+    txt_df['High Freq (Hz)'] = pd.NA
+
+    # extract out frequency rows if present
+    is_freq = txt_df.iloc[:,0]=='\\'
+    if any(is_freq):
+        # get corresponding time rows
+        corresponding_rows = np.where(is_freq)[0]-1
+        # make df with just frequency rows
+        freq_df = txt_df[is_freq].iloc[:,[1,2]].copy()
+        
+        pd.set_option('mode.chained_assignment',None)
+        txt_df['Low Freq (Hz)'][corresponding_rows] = freq_df.iloc[:,0]
+        txt_df['High Freq (Hz)'][corresponding_rows] = freq_df.iloc[:,1]
+        txt_df = txt_df[~is_freq]
+
+        # convert necessary columns to numeric; raise error if there are strings present
+        txt_df['Begin Time (s)'] = pd.to_numeric(txt_df['Begin Time (s)'], errors='raise')
+        txt_df['End Time (s)'] = pd.to_numeric(txt_df['End Time (s)'], errors='raise')
+        txt_df['Low Freq (Hz)'] = pd.to_numeric(txt_df['Low Freq (Hz)'], errors='raise')
+        txt_df['High Freq (Hz)'] = pd.to_numeric(txt_df['High Freq (Hz)'], errors='raise')
+
+    return(txt_df)    
+
+def is_float(string):
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+        
 def _check_audio_and_txt(args):
 
     # get duration of audio file
@@ -154,6 +190,16 @@ def _check_audio_and_txt(args):
     # read txt file
     txt_df = pd.read_csv(args.txt_path, sep='\t')
 
+    if is_float(txt_df.columns[0]) & is_float(txt_df.columns[1]):
+        print("\nAudacity txt file detected.")
+    
+        columns_header = ['Begin Time (s)','End Time (s)','category_update']
+        txt_df = pd.read_csv(args.txt_path, sep='\t', header=None,names=columns_header)
+        
+        txt_df = _format_audacity_as_raven(txt_df) 
+    else:
+        print("\nRaven txt file detected.")
+
     # make sure all expected columns are present
     txt_cols = txt_df.columns.tolist()
     if not all(i in txt_cols for i in EXPECTED_COLUMNS):
@@ -161,9 +207,9 @@ def _check_audio_and_txt(args):
         assert False, "Missing column(s) in txt file: " + ', '.join(missing_cols)
 
     # make sure any additional columns are only the allowed ones
-    if not all(i in ALLOWED_COLUMNS for i in txt_cols):
-        forbidden_cols = [i for i in txt_cols if i not in ALLOWED_COLUMNS]
-        assert False, "Unrecognized column(s) in txt file: " + ', '.join(forbidden_cols)
+    # if not all(i in ALLOWED_COLUMNS for i in txt_cols):
+    #     forbidden_cols = [i for i in txt_cols if i not in ALLOWED_COLUMNS]
+    #     assert False, "Unrecognized column(s) in txt file: " + ', '.join(forbidden_cols)
 
     # make sure entries in UPDATE_COL are recognized 
         
@@ -184,7 +230,10 @@ def _check_audio_and_txt(args):
     ibp_codes = taxonomy_df['ibp_code'].dropna().unique().tolist()
     
     taxa = species + groups + families + orders + ibp_codes
-    allowed_update_entries = taxa + CONFIRM_CODES + BACKGROUND_CODES + UNKNOWN_CODES
+    allowed_update_entries = taxa + BACKGROUND_CODES + UNKNOWN_CODES
+    # only allow confirm codes if 'predicted_category' also present
+    if 'predicted_category' in txt_cols:
+        allowed_update_entries = allowed_update_entries + CONFIRM_CODES
 
     update_entries_lower_uniq = txt_df[UPDATE_COL].dropna()
     if len(update_entries_lower_uniq)>0:
@@ -220,6 +269,9 @@ def _check_audio_and_txt(args):
     # make sure no selections are longer than file duration
     assert txt_df['End Time (s)'].max() <= audio_duration, "there are selections beyond the length of the audio file"
 
+    return txt_df
+     
+
 def get_output_filename(args):
 
     with open(args.yaml_path, 'r') as file:
@@ -253,7 +305,7 @@ def get_output_filename(args):
     return output_basename
 
 
-def save_archive(args,out_fn,gz=True):
+def save_archive(args,txt_df,out_fn,gz=True):
     
     if gz:
         mode = 'w:gz'
@@ -264,41 +316,56 @@ def save_archive(args,out_fn,gz=True):
 
     archive_out_fp = args.output_dir_path.joinpath(out_fn + ext)
 
-
-    # get sample rate of audio file
-    audio_sr = librosa.get_samplerate(path=args.audio_path)
-
-    open_tmpfile = False
-    if audio_sr != TARGET_SR:
-        print(f'\nInput audio has sample rate {audio_sr} Hz. Resampling to {TARGET_SR} Hz.\n')
-
-        y, sr_orig = librosa.load(args.audio_path,sr=None,mono=True) 
-
-        y_resamp = librosa.resample(y=y, 
-                                    orig_sr=sr_orig, 
-                                    target_sr=TARGET_SR, 
-                                    res_type='soxr_hq') # soxr_hq determined best by Harold
-
-        # create a temporary file
-        tmp_fp = tempfile.NamedTemporaryFile(suffix=".wav")
-        open_tmpfile = True
-        # print("tmp_fp before writing file:",tmp_fp.name)
-        sf.write(tmp_fp.name, y_resamp, TARGET_SR, 'PCM_16')
-    
-
-    print(f'Writing archive {archive_out_fp}.\n')
+    # use output dir for temporary files
+    # temp_dir = args.output_dir_path
 
     with tarfile.open(archive_out_fp, mode) as tar:
-        # add audio
-        if open_tmpfile: # if we converted
-            # print("tmp_fp before writing archive:",tmp_fp.name)
-            tar.add(tmp_fp.name,arcname=out_fn + '.wav')
-            tmp_fp.close()
-            open_tmpfile = False
+        print(f'Writing archive {archive_out_fp}.\n')
+
+        # get sample rate of audio file
+        audio_sr = librosa.get_samplerate(path=args.audio_path)
+
+        if audio_sr != TARGET_SR:
+            print(f'Input audio has sample rate {audio_sr} Hz. Resampling to {TARGET_SR} Hz.\n')
+    
+            y, sr_orig = librosa.load(args.audio_path,sr=None,mono=True) 
+    
+            y_resamp = librosa.resample(y=y, 
+                                        orig_sr=sr_orig, 
+                                        target_sr=TARGET_SR, 
+                                        res_type='soxr_hq') # soxr_hq determined best by Harold
+    
+            # create a temporary file and write it to the tar
+            # tmp_fp = tempfile.NamedTemporaryFile(suffix=".wav")
+            tmp_wav_fp = tempfile.NamedTemporaryFile(suffix=".wav",delete=False)
+            # print("tmpfile: ",tmp_wav_fp.name)
+            # print("tmpfile exists before writing?:",os.path.exists(tmp_wav_fp.name))
+            sf.write(tmp_wav_fp.name, y_resamp, TARGET_SR, 'PCM_16',closefd=False)
+            tar.add(tmp_wav_fp.name,arcname=out_fn + '.wav')
+            # print("tmpfile exists after writing?:",os.path.exists(tmp_wav_fp.name))
+            tmp_wav_fp.close()
+            # print("tmpfile exists after closing?:",os.path.exists(tmp_wav_fp.name))
+            os.remove(tmp_wav_fp.name)
+            # print("tmpfile exists after removing?:",os.path.exists(tmp_wav_fp.name))
+                        
         else:
             tar.add(args.audio_path,arcname=out_fn + '.wav')
-        tar.add(args.txt_path,arcname=out_fn + '.txt')
+        # tar.add(args.txt_path,arcname=out_fn + '.txt')
+
+        # create a temporary txt file and write it to tar
+        tmp_txt_fp = tempfile.NamedTemporaryFile(suffix=".txt",delete=False)
+        # print("tmpfile: ",tmp_txt_fp.name)
+        # print("tmpfile exists before writing?:",os.path.exists(tmp_txt_fp.name))
+        txt_df.to_csv(tmp_txt_fp.name, sep='\t', index=False,mode="w+")
+        tar.add(tmp_txt_fp.name,arcname=out_fn + '.txt')
+        # print("tmpfile exists after writing?:",os.path.exists(tmp_txt_fp.name))
+        tmp_txt_fp.close()
+        # print("tmpfile exists after closing?:",os.path.exists(tmp_txt_fp.name))
+        os.remove(tmp_txt_fp.name)
+        # print("tmpfile exists after removing?:",os.path.exists(tmp_txt_fp.name))
+        
         tar.add(args.yaml_path,arcname=out_fn + '.yml')    
+    
 
     print(f'Done. Please send this file to Nighthawk developers.\n')
 

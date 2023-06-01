@@ -40,13 +40,13 @@ Windows taskbar. On macOS and Linux, type the commands below in a regular
 terminal.
 
 To install Nighthawk, first create a new Python environment named
-`nighthawk-0.1.1` that uses Python 3.10:
+`nighthawk-0.2.0` that uses Python 3.10:
 
-    conda create -n nighthawk-0.1.1 python=3.10
+    conda create -n nighthawk-0.2.0 python=3.10
 
 Then activate the environment:
 
-    conda activate nighthawk-0.1.1
+    conda activate nighthawk-0.2.0
 
 and install the Nighthawk Python package and its dependencies:
 
@@ -96,7 +96,7 @@ the `nighthawk` program from the command line. At an Anaconda Prompt
 (on Windows) or terminal (on macOS or Linux), first activate your
 Nighthawk environment with:
 
-    conda activate nighthawk-0.1.1
+    conda activate nighthawk-0.2.0
 
 Then, to run the `nighthawk` program on an audio file, say `my_file.wav`:
 

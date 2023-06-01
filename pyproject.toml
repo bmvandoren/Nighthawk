@@ -54,7 +54,7 @@
 #		 argument looks in test.pypi.org but also allows pip to look outside too,
 #		 for installing dependencies.
 #
-#			pip install --extra-index-url https://test.pypi.org/simple/ nighthawk=0.1.0
+#			pip install --extra-index-url https://test.pypi.org/simple/ nighthawk==0.1.0
 #
 #     6. Upload package to PyPI prod (see commands above).	
 #

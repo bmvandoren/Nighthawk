@@ -15,13 +15,17 @@ MODEL_INPUT_DURATION = 1          # seconds
 
 DEFAULT_HOP_SIZE = 20             # percent of model input duration
 DEFAULT_THRESHOLD = 80            # percent
-DEFAULT_MASK_AP_THRESHOLD = 0.7
+DEFAULT_AP_MASK_THRESHOLD = 0.7
 DEFAULT_MERGE_OVERLAPS = True
 DEFAULT_DROP_UNCERTAIN = True
 DEFAULT_CSV_OUTPUT = True
 DEFAULT_RAVEN_OUTPUT = False
 DEFAULT_AUDACITY_OUTPUT = False
 DEFAULT_OUTPUT_DIR_PATH = None
+DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS = False
+DEFAULT_GZIP_OUTPUT = False
+DEFAULT_DO_CALIBRATION = True
+DEFAULT_QUIET = False
 
 _PACKAGE_DIR_PATH = Path(__file__).parent
 _MODEL_DIR_PATH = _PACKAGE_DIR_PATH / 'saved_model_with_preprocessing'
@@ -36,7 +40,11 @@ def run_detector_on_files(
         raven_output=DEFAULT_RAVEN_OUTPUT,
         audacity_output=DEFAULT_AUDACITY_OUTPUT,
         output_dir_path=DEFAULT_OUTPUT_DIR_PATH,
-        mask_ap_threshold=DEFAULT_MASK_AP_THRESHOLD):
+        mask_ap_threshold=DEFAULT_AP_MASK_THRESHOLD,
+        return_tax_level_detections=DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS,
+        gzip_output=DEFAULT_GZIP_OUTPUT,
+        do_calibration=DEFAULT_DO_CALIBRATION,
+        quiet=DEFAULT_QUIET):
     
     input_file_paths = _expand_paths(input_file_paths)
     file_count = len(input_file_paths)
@@ -62,23 +70,30 @@ def run_detector_on_files(
                 f'Running detector on audio file {i + 1} of {file_count}: '
                 f'"{input_file_path}"...')
         
-        detections = _run_detector_on_file(
+        detections, detect_df_dict = _run_detector_on_file(
             input_file_path, model, config_file_paths, hop_size, threshold,
-            merge_overlaps, drop_uncertain, mask_ap_threshold)
+            merge_overlaps, drop_uncertain, mask_ap_threshold, return_tax_level_detections,
+            do_calibration, quiet)
 
         if csv_output:
             output_file_path = _prep_for_output(
-                input_file_path, output_dir_path, '.csv')
+                input_file_path, output_dir_path, '.csv', gzip=gzip_output)
             _write_detection_csv_file(output_file_path, detections)
+
+            if return_tax_level_detections:
+                for tax_level, detect_df in detect_df_dict.items():
+                    output_file_path = _prep_for_output(
+                        input_file_path, output_dir_path, '.csv',  descriptor=tax_level, gzip=gzip_output)
+                    _write_detection_csv_file(output_file_path, detect_df)
 
         if raven_output:
             output_file_path = _prep_for_output(
-                input_file_path, output_dir_path, '.txt',  descriptor='raven')
+                input_file_path, output_dir_path, '.txt',  descriptor='raven', gzip=gzip_output)
             _write_detection_selection_table_file(output_file_path, detections)
 
         if audacity_output:
             output_file_path = _prep_for_output(
-                input_file_path, output_dir_path, '.txt',  descriptor='audacity')
+                input_file_path, output_dir_path, '.txt',  descriptor='audacity', gzip=gzip_output)
             _write_detection_audacity_label_file(output_file_path, detections)
 
 
@@ -139,9 +154,15 @@ def _get_configuration_file_paths():
 
 def _run_detector_on_file(
         audio_file_path, model, paths, hop_size, threshold, merge_overlaps,
-        drop_uncertain,mask_ap_threshold):
+        drop_uncertain,mask_ap_threshold,return_tax_level_detections,do_calibration,
+        quiet):
 
     p = paths
+
+    if do_calibration:
+        calib = p.calibrators
+    else:
+        calib = None      
     
     # Change hop size from percentage to seconds.
     hop_dur = hop_size / 100 * MODEL_INPUT_DURATION
@@ -152,14 +173,15 @@ def _run_detector_on_file(
     return run_reconstructed_model.run_model_on_file(
         model, audio_file_path, MODEL_SAMPLE_RATE, MODEL_INPUT_DURATION,
         hop_dur, p.species, p.groups, p.families, p.orders,
-        p.ebird_taxonomy, p.group_ebird_codes, p.calibrators, p.config,
-        stream=False, threshold=threshold, quiet=True,
+        p.ebird_taxonomy, p.group_ebird_codes, calib, p.config,
+        stream=False, threshold=threshold, quiet=quiet,
         model_runner=_get_model_predictions,
         postprocess_drop_singles_by_tax_level=drop_uncertain,
         postprocess_merge_overlaps=merge_overlaps,
         postprocess_retain_only_overlaps=drop_uncertain,
         mask_output_ap_threshold=mask_ap_threshold,
-        test_set_performance_dir=p.test_set_performance)
+        test_set_performance_dir=p.test_set_performance,
+        return_tax_level_detections=return_tax_level_detections)
 
 
 def _get_model_predictions(
@@ -229,7 +251,8 @@ def _report_processing_speed(file_path, elapsed_time):
         f'seconds, {rate:.1f} times faster than real time.')
 
 
-def _prep_for_output(input_file_path, output_dir_path, file_name_suffix, descriptor='detections'):
+def _prep_for_output(input_file_path, output_dir_path, file_name_suffix, 
+                     descriptor='detections',gzip=False):
 
     # Get output file path.
     if output_dir_path is None:
@@ -242,6 +265,10 @@ def _prep_for_output(input_file_path, output_dir_path, file_name_suffix, descrip
     # Create parent directories if needed.
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # add gzip extension if we are gzipping
+    if gzip:
+        file_path = file_path.parent / (file_path.name + '.gz')
+
     return file_path
 
 
@@ -250,6 +277,7 @@ def _write_detection_csv_file(file_path, detections):
 
 
 def _write_detection_selection_table_file(file_path, detections):
+    
 
     # Rename certain dataframe columns for Raven.
     columns = {

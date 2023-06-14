@@ -10,13 +10,14 @@ import nighthawk as nh
 def main():
 
     args = _parse_args()
-
+    
     nh.run_detector_on_files(
         args.input_file_paths, args.hop_size, args.threshold,
         args.merge_overlaps, args.drop_uncertain, args.csv_output,
         args.raven_output, args.audacity_output,
-        args.output_dir_path)
-    
+        args.output_dir_path, args.ap_mask,
+        args.tax_output, args.gzip_output, args.calibration,
+        args.quiet)
 
 def _parse_args():
     
@@ -44,6 +45,12 @@ def _parse_args():
         help='the detection threshold, a number in [0, 100]. (default: 80)',
         type=_parse_threshold,
         default=nh.DEFAULT_THRESHOLD)
+
+    parser.add_argument(
+        '--ap-mask',
+        help='the AP mask threshold, a number in [0, 1]. (default: 0.7)',
+        type=_parse_ap_mask,
+        default=nh.DEFAULT_AP_MASK_THRESHOLD)    
     
     parser.add_argument(
         '--merge-overlaps',
@@ -57,6 +64,18 @@ def _parse_args():
         action=BooleanOptionalAction,
         default=nh.DEFAULT_DROP_UNCERTAIN)
 
+    parser.add_argument(
+        '--calibration',
+        help='calibrate model outputs.',
+        action=BooleanOptionalAction,
+        default=nh.DEFAULT_DO_CALIBRATION)   
+
+    parser.add_argument(
+        '--quiet',
+        help='Mask unnecessary console messages.',
+        action=BooleanOptionalAction,
+        default=nh.DEFAULT_QUIET)       
+    
     parser.add_argument(
         '--csv-output',
         help='output detections to a CSV file.',
@@ -76,6 +95,18 @@ def _parse_args():
         default=nh.DEFAULT_AUDACITY_OUTPUT)    
 
     parser.add_argument(
+        '--gzip-output',
+        help='gzip all output files.',
+        action=BooleanOptionalAction,
+        default=nh.DEFAULT_GZIP_OUTPUT)  
+
+    parser.add_argument(
+        '--tax-output',
+        help='save separate taxonomic output files.',
+        action=BooleanOptionalAction,
+        default=nh.DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS)      
+
+    parser.add_argument(
         '--output-dir',
         help=(
             'directory in which to write output files. (default: input '
@@ -83,7 +114,7 @@ def _parse_args():
         type=Path,
         dest='output_dir_path',
         default=nh.DEFAULT_OUTPUT_DIR_PATH)
-    
+
     return parser.parse_args()
 
 
@@ -123,6 +154,26 @@ def _handle_threshold_error(value):
     raise ArgumentTypeError(
         f'Bad detection threshold "{value}". Threshold must be '
         f'a number in the range [0, 100].')
+
+
+
+def _parse_ap_mask(value):
+    
+    try:
+        ap_mask = float(value)
+    except Exception:
+        _handle_ap_mask_error(value)
+    
+    if ap_mask < 0 or ap_mask > 1:
+        _handle_ap_mask_error(value)
+    
+    return ap_mask
+    
+    
+def _handle_ap_mask_error(value):
+    raise ArgumentTypeError(
+        f'Bad AP mask threshold "{value}". Value must be '
+        f'a number in the range [0, 1].')
     
 
 if __name__ == '__main__':

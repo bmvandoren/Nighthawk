@@ -260,14 +260,14 @@ def _prep_for_output(input_file_path, output_dir_path, file_name_suffix,
     file_name = f'{input_file_path.stem}_{descriptor}{file_name_suffix}'
     file_path = output_dir_path / file_name
 
-    print(f'Writing output file "{file_path}"...')
-
     # Create parent directories if needed.
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     # add gzip extension if we are gzipping
     if gzip:
         file_path = file_path.parent / (file_path.name + '.gz')
+
+    print(f'Writing output file "{file_path}"...')
 
     return file_path
 

@@ -14,7 +14,7 @@ def main():
     nh.run_detector_on_files(
         args.input_file_paths, args.hop_size, args.threshold,
         args.merge_overlaps, args.drop_uncertain, args.csv_output,
-        args.raven_output, args.audacity_output,
+        args.raven_output, args.audacity_output, args.duration_output,
         args.output_dir_path, args.ap_mask,
         args.tax_output, args.gzip_output, args.calibration,
         args.quiet)
@@ -92,7 +92,13 @@ def _parse_args():
         '--audacity-output',
         help='output detections to an Audacity label file.',
         action=BooleanOptionalAction,
-        default=nh.DEFAULT_AUDACITY_OUTPUT)    
+        default=nh.DEFAULT_AUDACITY_OUTPUT)  
+
+    parser.add_argument(
+        '--duration-output',
+        help='output file duration in seconds to a txt file.',
+        action=BooleanOptionalAction,
+        default=nh.DEFAULT_DURATION_OUTPUT)      
 
     parser.add_argument(
         '--gzip-output',

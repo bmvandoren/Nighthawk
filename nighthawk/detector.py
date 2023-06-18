@@ -21,6 +21,7 @@ DEFAULT_DROP_UNCERTAIN = True
 DEFAULT_CSV_OUTPUT = True
 DEFAULT_RAVEN_OUTPUT = False
 DEFAULT_AUDACITY_OUTPUT = False
+DEFAULT_DURATION_OUTPUT = False
 DEFAULT_OUTPUT_DIR_PATH = None
 DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS = False
 DEFAULT_GZIP_OUTPUT = False
@@ -39,6 +40,7 @@ def run_detector_on_files(
         drop_uncertain=DEFAULT_DROP_UNCERTAIN, csv_output=DEFAULT_CSV_OUTPUT,
         raven_output=DEFAULT_RAVEN_OUTPUT,
         audacity_output=DEFAULT_AUDACITY_OUTPUT,
+        duration_output=DEFAULT_DURATION_OUTPUT,
         output_dir_path=DEFAULT_OUTPUT_DIR_PATH,
         mask_ap_threshold=DEFAULT_AP_MASK_THRESHOLD,
         return_tax_level_detections=DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS,
@@ -74,6 +76,13 @@ def run_detector_on_files(
             input_file_path, model, config_file_paths, hop_size, threshold,
             merge_overlaps, drop_uncertain, mask_ap_threshold, return_tax_level_detections,
             do_calibration, quiet)
+
+        if duration_output:
+            output_file_path = _prep_for_output(
+                input_file_path, output_dir_path, '.txt',  descriptor='duration', gzip=False)
+            input_file_duration_s = librosa.get_duration(path=input_file_path)
+            _write_duration_txt_file(output_file_path, input_file_duration_s)
+            
 
         if csv_output:
             output_file_path = _prep_for_output(
@@ -274,6 +283,12 @@ def _prep_for_output(input_file_path, output_dir_path, file_name_suffix,
 
 def _write_detection_csv_file(file_path, detections):
     detections.to_csv(file_path, index=False, na_rep='')
+
+def _write_duration_txt_file(file_path, duration):
+     # write path and duration
+    text_file = open(file_path, "w")
+    n = text_file.write("%s\n" % (duration))
+    text_file.close()
 
 
 def _write_detection_selection_table_file(file_path, detections):

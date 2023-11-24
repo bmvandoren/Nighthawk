@@ -620,7 +620,8 @@ def run_model_on_file(audio_model,
                      postprocess_merge_overlaps=True,
                      postprocess_retain_only_overlaps=True, # only does something if postprocess_merge_overlaps=True
                      mask_output_ap_threshold=None,
-                      test_set_performance_dir=None
+                      test_set_performance_dir=None,
+                      return_tax_level_detections=False
                      ):
     
     if not quiet:
@@ -695,6 +696,9 @@ def run_model_on_file(audio_model,
             if not quiet:    
                 print("masking the following order:",order_to_remove)
             subselect_order = [x for x in subselect_order if x not in order_to_remove]        
+        else:
+            if not quiet:
+                print("not masking any taxa")
                     
             
     else:
@@ -783,16 +787,17 @@ def run_model_on_file(audio_model,
         print("merging taxonomic predictions")
             
     # for additional confidence, we can choose do some postprocessing
-    merged_df = postprocess(
+    merged_df, detect_df_dict = postprocess(
         detect_df_dict, clip_length_sec, stride_sec, family_order_map,
         group_family_map, species_group_map, species_family_map, quiet,
         postprocess_drop_singles_by_tax_level, postprocess_merge_overlaps,
-        postprocess_retain_only_overlaps)
+        postprocess_retain_only_overlaps,
+        return_tax_level_detections)
     
     if not quiet:
         print("done")
         
-    return merged_df
+    return merged_df, detect_df_dict
 
 
 def load_taxonomy(taxonomy_fp, group_map_fp):
@@ -827,7 +832,8 @@ def postprocess(
         detect_df_dict, clip_length_sec, stride_sec, family_order_map,
         group_family_map, species_group_map, species_family_map, quiet,
         postprocess_drop_singles_by_tax_level, postprocess_merge_overlaps,
-        postprocess_retain_only_overlaps):
+        postprocess_retain_only_overlaps,
+        return_tax_level_detections=False):
 
     # merge taxonomic levels - this also enforces taxonomic consistency on the detections
     merged_df = combine_taxon_detections(detect_df_dict,
@@ -868,9 +874,9 @@ def postprocess(
         ct = 'merge'
         merged_df = process_overlapping_detections(merged_df,ct)
 
-        ## not needed currently
-        # merge each of the taxonomic levels individually
-        # detect_df_dict = { key: process_overlapping_detections(df,ct) for key,df in detect_df_dict.items() }
+        if return_tax_level_detections:
+            # merge each of the taxonomic levels individually
+            detect_df_dict = { key: process_overlapping_detections(df,ct) for key,df in detect_df_dict.items() }
 
     # if we merged overlaps, should we remove detections that weren't merged?
     # check: does this do anything if postprocess_drop_singles_by_tax_level is already True?
@@ -878,15 +884,18 @@ def postprocess(
         if postprocess_merge_overlaps:
             merged_df = remove_detections_by_duration(merged_df,clip_length_sec,stride_sec)
 
-            ## not needed currently
-            # calculate for each of the taxonomic levels individually
-            # detect_df_dict = { key: remove_detections_by_duration(df,clip_length_sec,stride_sec) for key,df in detect_df_dict.items() }
+            if return_tax_level_detections:
+                # calculate for each of the taxonomic levels individually
+                detect_df_dict = { key: remove_detections_by_duration(df,clip_length_sec,stride_sec) for key,df in detect_df_dict.items() }
 
         else:
             if not quiet:
                 print("postprocess_merge_overlaps is False, so ignoring postprocess_retain_only_overlaps")
 
-    return merged_df
+    if not return_tax_level_detections:
+        detect_df_dict = None
+    
+    return merged_df, detect_df_dict
 
 
 def save_detections_to_file(detect_df, 

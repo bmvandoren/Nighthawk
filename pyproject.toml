@@ -21,10 +21,12 @@
 #
 #     conda activate nighthawk-dev
 #     python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+#     python -m twine upload --repository nighthawk-test dist/* --verbose
 #
 # To upload a built package to the real Python package index:
 #
 #     conda activate nighthawk-dev
+#     python -m twine upload --repository nighthawk-prod dist/* --verbose
 #     python -m twine upload dist/*
 #
 # Release checklist:
@@ -55,6 +57,7 @@
 #		 for installing dependencies.
 #
 #			pip install --extra-index-url https://test.pypi.org/simple/ nighthawk==0.1.0
+#			pip install nighthawk==0.3.0
 #
 #     6. Upload package to PyPI prod (see commands above).	
 #

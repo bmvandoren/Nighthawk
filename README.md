@@ -128,30 +128,41 @@ list of all command line arguments, run the command:
   
 to produce the output:
 
-    usage: nighthawk [-h] [--hop-size HOP_SIZE] [--threshold THRESHOLD] [--merge-overlaps | --no-merge-overlaps] [--drop-uncertain | --no-drop-uncertain] [--csv-output | --no-csv-output] [--raven-output | --no-raven-output]
-                     [--audacity-output | --no-audacity-output] [--output-dir OUTPUT_DIR_PATH]
+    usage: nighthawk [-h] [--hop-size HOP_SIZE] [--threshold THRESHOLD] [--ap-mask AP_MASK] [--merge-overlaps | --no-merge-overlaps] [--drop-uncertain | --no-drop-uncertain] [--calibration | --no-calibration]
+                     [--quiet | --no-quiet] [--csv-output | --no-csv-output] [--raven-output | --no-raven-output] [--audacity-output | --no-audacity-output] [--duration-output | --no-duration-output]
+                     [--gzip-output | --no-gzip-output] [--tax-output | --no-tax-output] [--output-dir OUTPUT_DIR_PATH]
                      input_file_path [input_file_path ...]
-
+    
     positional arguments:
       input_file_path       path of audio file(s) on which to run the detector. Accepts directories and wildcards.
-
+    
     options:
       -h, --help            show this help message and exit
       --hop-size HOP_SIZE   the hop size as a percentage of the model input duration, a number in the range (0, 100]. (default: 20)
       --threshold THRESHOLD
                             the detection threshold, a number in [0, 100]. (default: 80)
+      --ap-mask AP_MASK     the AP mask threshold, a number in [0, 1]. (default: 0.7)
       --merge-overlaps, --no-merge-overlaps
                             merge overlapping detections. (default: True)
       --drop-uncertain, --no-drop-uncertain
                             apply postprocessing steps to drop less certain detections. (default: True)
+      --calibration, --no-calibration
+                            calibrate model outputs. (default: True)
+      --quiet, --no-quiet   Mask unnecessary console messages. (default: False)
       --csv-output, --no-csv-output
                             output detections to a CSV file. (default: True)
       --raven-output, --no-raven-output
                             output detections to a Raven selection table file. (default: False)
       --audacity-output, --no-audacity-output
                             output detections to an Audacity label file. (default: False)
+      --duration-output, --no-duration-output
+                            output file duration in seconds to a txt file. (default: False)
+      --gzip-output, --no-gzip-output
+                            gzip all output files. (default: False)
+      --tax-output, --no-tax-output
+                            save separate taxonomic output files. (default: False)
       --output-dir OUTPUT_DIR_PATH
-                            directory in which to write output files. (default: input file directories)
+                            directory in which to write output files. (default: input file directories)                      
 
 ## Use with Vesper
   

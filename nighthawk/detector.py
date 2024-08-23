@@ -145,10 +145,10 @@ def _get_configuration_file_paths():
     paths = _Bunch()
 
     taxonomy = _TAXONOMY_DIR_PATH
-    paths.species =  taxonomy / 'species_select_v6.txt'
-    paths.groups =  taxonomy / 'groups_select_v6.txt'
-    paths.families =  taxonomy / 'families_select_v6.txt'
-    paths.orders =  taxonomy / 'orders_select_v6.txt'
+    paths.species =  taxonomy / 'species.txt'
+    paths.groups =  taxonomy / 'groups.txt'
+    paths.families =  taxonomy / 'families.txt'
+    paths.orders =  taxonomy / 'orders.txt'
     paths.ebird_taxonomy = taxonomy / 'ebird_taxonomy.csv'
     paths.group_ebird_codes = taxonomy / 'groups_ebird_codes.csv'
     paths.ibp_codes = taxonomy / 'IBP-AOS-LIST21.csv'

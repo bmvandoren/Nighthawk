@@ -315,7 +315,7 @@ def _write_detection_selection_table_file(file_path, detections):
 
 def _write_detection_audacity_label_file(file_path, detections):
 
-    detections['pred_cat_prob'] = detections['predicted_category'] + ' (' + detections['prob'].astype(float).round(3).astype(str) + ')'
+    detections['pred_cat_prob'] = detections['predicted_category'].astype(str) + ' (' + detections['prob'].astype(float).round(3).astype(str) + ')'
     
     aud_df = detections[['start_sec','end_sec','pred_cat_prob']].copy()
 

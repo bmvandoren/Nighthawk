@@ -40,13 +40,13 @@ Windows taskbar. On macOS and Linux, type the commands below in a regular
 terminal.
 
 To install Nighthawk, first create a new Python environment named
-`nighthawk-0.3.0` that uses Python 3.10:
+`nighthawk-0.3.1` that uses Python 3.10:
 
-    conda create -n nighthawk-0.3.0 python=3.10
+    conda create -n nighthawk-0.3.1 python=3.10
 
 Then activate the environment:
 
-    conda activate nighthawk-0.3.0
+    conda activate nighthawk-0.3.1
 
 and install the Nighthawk Python package and its dependencies:
 
@@ -81,7 +81,7 @@ into your Nighthawk Python environment with:
     pip install tensorflow-metal
 
 can accelerate Nighthawk considerably. Unfortunately, however,
-version 0.8.0 of the ``tensorflow-metal`` package (the most recent
+version 1.1.0 of the ``tensorflow-metal`` package (the most recent
 version as of this writing) also appears to leak memory and cause
 Nighthawk to hang when processing large (e.g. full-night) audio files
 on our test machine, an M2 Mac mini with 8 GB of memory. For this
@@ -96,7 +96,7 @@ the `nighthawk` program from the command line. At an Anaconda Prompt
 (on Windows) or terminal (on macOS or Linux), first activate your
 Nighthawk environment with:
 
-    conda activate nighthawk-0.3.0
+    conda activate nighthawk-0.3.1
 
 Then, to run the `nighthawk` program on an audio file, say `my_file.wav`:
 

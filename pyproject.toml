@@ -35,7 +35,10 @@
 #
 #     1. Update package version number below. Commit and push to GitHub repo.
 #
-#     2. Tag Git commit with version number. From the directory containing
+#     2. Update README.md, including with new version number. Commit and
+#        push to GitHub repo.
+#
+#     3. Tag Git commit with version number. From the directory containing
 #        this file, do something like (but with the correct version number):
 #
 #            git tag v0.1.0               # creates tag in local repo
@@ -47,27 +50,22 @@
 #            git tag -d v0.1.0            # deletes tag from local repo
 #            git push origin :v0.1.0      # pushes tag deletion to GitHub repo
 #
-#     3. Build package (see commands above).
+#     4. Build package (see commands above).
 #
-#     4. Upload package to PyPI test (see commands above).
+#     5. Upload package to PyPI test (see commands above).
 #
-#     5. Sanity check installation and execution. Use the following command in a 
-#		 fresh environment to install from the test repository. The extra-index-url
-#		 argument looks in test.pypi.org but also allows pip to look outside too,
-#		 for installing dependencies.
+#     6. Sanity check installation and execution. Use the following command
+#        in a fresh environment to install from the test repository. The
+#        extra-index-url argument looks in test.pypi.org but also allows pip
+#        to look outside too, for installing dependencies.
 #
-#			pip install --extra-index-url https://test.pypi.org/simple/ nighthawk==0.1.0
-#			pip install nighthawk==0.3.0
+#			       pip install --extra-index-url https://test.pypi.org/simple/ nighthawk==0.3.1
 #
-#     6. Upload package to PyPI prod (see commands above).	
+#     7. Upload package to PyPI prod (see commands above).	
 #
-#     7. Create release in GitHub. Choose the tag created above for the
+#     8. Create release in GitHub. Choose the tag created above for the
 #        release. Give the release the same name as the tag. Write
 #        release notes.
-#
-#     8. Update documentation if needed, including with new version
-#        number. (BVD: should this be done before uploading the package,
-#		 so the README contains the correct version number?)
 #
 #     9. Announce.
 
@@ -77,7 +75,7 @@ build-backend = 'hatchling.build'
 
 [project]
 name = 'nighthawk'
-version = '0.3.0'
+version = '0.3.1'
 description = 'Nighthawk avian nocturnal flight call detector'
 readme = 'README.md'
 requires-python = '~=3.10.0'
@@ -91,7 +89,7 @@ classifiers = [
 ]
 dependencies = [
     'librosa~=0.10.0',
-    'pandas',
+    'pandas~=2.2.0',
     'pyyaml',
     'tensorflow~=2.12.0;platform_system != "Darwin" or platform_machine != "arm64"',
     'tensorflow-macos~=2.12.0;platform_system == "Darwin" and platform_machine == "arm64"',

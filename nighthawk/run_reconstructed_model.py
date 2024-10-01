@@ -104,6 +104,14 @@ def process_overlapping_detections(df,combine_type,
         df_keep = df.loc[~is_too_long]
         df_split = df.loc[is_too_long]
 
+        # Copy `df_split` to avoid Pandas `SettingWithCopyWarning` when we
+        # create temporary column. The warning recommends assigning to
+        # `df_split.loc[:, 'tmp']` instead of `df_split['tmp']` to create
+        # the column without triggering the warning, but that doesn't work.
+        # Pandas still issues the warning, and we must copy `df_split` to
+        # avoid it.
+        df_split = df_split.copy()
+
         df_split['tmp'] = range(df_split.shape[0])
         df_split = df_split.groupby('tmp', group_keys=False).apply(split_long_detections_helper,max_duration=max_duration)
         df_split = df_split.drop('tmp',axis=1)
@@ -583,7 +591,7 @@ def combine_taxon_detections(detect_df_dict,
     def helper1(x,col_name_list):
         x = x[col_name_list].dropna()
         if len(x)>0:
-            return(x[0])
+            return(x.iloc[0])
         else:
             return(pd.NA)
 

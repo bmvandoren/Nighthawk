@@ -7,6 +7,7 @@ import json
 from itertools import compress
 
 from nighthawk.probability_calibration_utils import load_calibrations
+from nighthawk.probability_calibration_utils import prob_to_logit
 
 
 def process_overlapping_detections(df,combine_type,
@@ -504,11 +505,14 @@ def extract_detections_from_probabilities(df_probs,thresh_prob=0.5):
     return(res)
 
 
-def apply_calibration(output_df,calibrators):
+def apply_calibration(output_df,calibrators,convert_to_logits=True):
     for column in output_df:
         if column not in ['start_sec','end_sec']:
             if column in calibrators:
-                output_df[column] = calibrators[column].predict(output_df[column])
+                if convert_to_logits:
+                    output_df[column] = calibrators[column].predict(prob_to_logit(output_df[column]))
+                else:
+                    output_df[column] = calibrators[column].predict(output_df[column])
             else:
                 print("calibrator for %s not found; not calibrating this taxon" % column)
     return output_df
@@ -619,6 +623,7 @@ def run_model_on_file(audio_model,
                         taxonomy_fp,
                         group_map_fp,
                         calibrators_fp=None,
+                        calibrate_from_logits=True,
                       test_config_fp=None,
                          stream=False,
                          threshold = 0.5,
@@ -674,7 +679,8 @@ def run_model_on_file(audio_model,
 
         species_ap_fp = os.path.join(test_set_performance_dir,'taxon_summary_species.csv')
         species_ap_df = pd.read_csv(species_ap_fp)
-        bad_species = species_ap_df.iloc[:,0][species_ap_df['ap_masked']<mask_output_ap_threshold].tolist()
+
+        bad_species = species_ap_df.iloc[:,0][(species_ap_df['ap_masked']<mask_output_ap_threshold) | (species_ap_df['ap_masked'].isna())].tolist()
         species_to_remove = intersection(subselect_species,bad_species)
         if not quiet:
             print("masking the following species:",species_to_remove)
@@ -682,7 +688,7 @@ def run_model_on_file(audio_model,
         
         group_ap_fp = os.path.join(test_set_performance_dir,'taxon_summary_group.csv')
         group_ap_df = pd.read_csv(group_ap_fp)
-        bad_group = group_ap_df.iloc[:,0][group_ap_df['ap_masked']<mask_output_ap_threshold].tolist()
+        bad_group = group_ap_df.iloc[:,0][(group_ap_df['ap_masked']<mask_output_ap_threshold) | (group_ap_df['ap_masked'].isna())].tolist()
         group_to_remove = intersection(subselect_group,bad_group)
         if not quiet:
             print("masking the following group:",group_to_remove)
@@ -690,7 +696,7 @@ def run_model_on_file(audio_model,
         
         family_ap_fp = os.path.join(test_set_performance_dir,'taxon_summary_family.csv')
         family_ap_df = pd.read_csv(family_ap_fp)
-        bad_family = family_ap_df.iloc[:,0][family_ap_df['ap_masked']<mask_output_ap_threshold].tolist()
+        bad_family = family_ap_df.iloc[:,0][(family_ap_df['ap_masked']<mask_output_ap_threshold) | (family_ap_df['ap_masked'].isna())].tolist()
         family_to_remove = intersection(subselect_family,bad_family)
         if not quiet:
             print("masking the following family:",family_to_remove)
@@ -698,7 +704,7 @@ def run_model_on_file(audio_model,
         
         order_ap_fp = os.path.join(test_set_performance_dir,'taxon_summary_order.csv')
         order_ap_df = pd.read_csv(order_ap_fp)
-        bad_order = order_ap_df.iloc[:,0][order_ap_df['ap_masked']<mask_output_ap_threshold].tolist()
+        bad_order = order_ap_df.iloc[:,0][(order_ap_df['ap_masked']<mask_output_ap_threshold) | (order_ap_df['ap_masked'].isna())].tolist()
         order_to_remove = intersection(subselect_order,bad_order)
         if not quiet:    
             print("masking the following order:",order_to_remove)
@@ -706,7 +712,7 @@ def run_model_on_file(audio_model,
             
     else:
         if not quiet:
-            print("NOTE: making unvalidated taxon predictions") 
+            print("NOTE: making unvalidated taxon predictions, likely because --ap-mask is 0 or test_config file is missing") 
 
         subselect_species = species
         subselect_group = groups
@@ -772,7 +778,7 @@ def run_model_on_file(audio_model,
         if not quiet:
             print("doing calibration") 
         calibrators = load_calibrations(calibrators_fp)
-        probs_df_dict = {key : apply_calibration(df,calibrators) for key,df in probs_df_dict.items()}
+        probs_df_dict = {key : apply_calibration(df,calibrators,convert_to_logits=calibrate_from_logits) for key,df in probs_df_dict.items()}
     else:
         if not quiet:
             print("not doing calibration")

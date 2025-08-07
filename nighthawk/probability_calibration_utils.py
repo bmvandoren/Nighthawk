@@ -12,6 +12,10 @@ the scikit-learn class `_SigmoidCalibration` for more.
 
 import numpy as np
 
+def prob_to_logit(p, eps=1e-8):
+        """Convert probabilities to logits, safely avoiding 0 or 1."""
+        p = np.clip(p, eps, 1 - eps)
+        return np.log(p / (1 - p))
 
 def load_calibrations(csv_file_path):
 

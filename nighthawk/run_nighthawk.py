@@ -18,6 +18,7 @@ def main():
         args.output_dir_path, args.ap_mask,
         args.tax_output, args.gzip_output, args.calibration,
         args.fallback_threshold,
+        args.taxon_mask_group,
         args.quiet)
 
 def _parse_args():
@@ -76,6 +77,12 @@ def _parse_args():
         help='the fallback threshold applied after taxonomic merge, a number in [0, 100]. (default: 50)',
         type=_parse_threshold,
         default=nh.DEFAULT_FALLBACK_THRESHOLD)    
+    
+    parser.add_argument(
+        '--taxon-mask-group',
+        help='the taxon mask group to use. One of: [americas, eurasia]. (default: None)',
+        type=str,
+        default=nh.DEFAULT_TAXON_MASK_GROUP)
 
     parser.add_argument(
         '--quiet',

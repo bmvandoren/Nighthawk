@@ -685,7 +685,8 @@ def run_model_on_file(audio_model,
                      mask_output_ap_threshold=None,
                       test_set_performance_dir=None,
                       return_tax_level_detections=False,
-                      fallback_threshold=None
+                      fallback_threshold=None,
+                      taxon_mask_group=None
                      ):
     
     if not quiet:
@@ -707,8 +708,13 @@ def run_model_on_file(audio_model,
 
     (species_group_map, species_family_map, group_family_map,
         family_order_map) = load_taxonomy(taxonomy_fp, group_map_fp)
+
+    # helper function    
+    def intersection(lst1, lst2):
+        lst3 = [value for value in lst1 if value in lst2]
+        return lst3
         
-    # load test config for species subset
+    # subselect species based on performance on test set and AP mask threshold
     if test_config_fp is not None and mask_output_ap_threshold is not None and mask_output_ap_threshold>0:
         if not quiet:
             print("using taxon subset") 
@@ -723,10 +729,6 @@ def run_model_on_file(audio_model,
 
         if not quiet:
             print("masking taxa with ap less than %s" % mask_output_ap_threshold)
-
-        def intersection(lst1, lst2):
-            lst3 = [value for value in lst1 if value in lst2]
-            return lst3
 
         species_ap_fp = os.path.join(test_set_performance_dir,'taxon_summary_species.csv')
         species_ap_df = pd.read_csv(species_ap_fp)
@@ -769,6 +771,57 @@ def run_model_on_file(audio_model,
         subselect_group = groups
         subselect_family = families
         subselect_order = orders            
+
+    # further subselect species based on taxon_metadata.csv
+    # look for taxon_metadata.csv in the same directory as taxonomy_fp
+    if taxon_mask_group is not None:
+        taxon_metadata_fp = os.path.join(os.path.dirname(taxonomy_fp), 'taxon_metadata.csv')
+        if not os.path.exists(taxon_metadata_fp):
+            if not quiet:
+                print(f"WARNING: {taxon_metadata_fp} not found, skipping further subselection")
+            taxon_metadata_df = pd.DataFrame()
+        else:
+            taxon_metadata_df = pd.read_csv(taxon_metadata_fp)
+
+            # if taxon_mask_group is equal to one of the column names of taxon_metadata.csv
+            if taxon_mask_group is not None and taxon_mask_group in taxon_metadata_df.columns:
+                filter_taxa = taxon_metadata_df['taxonCode'][taxon_metadata_df[taxon_mask_group] == 1].tolist()
+
+                filter_taxa_lower = set([str(t).lower() for t in filter_taxa])
+                new_subselect_species = [i for i in subselect_species if str(i).lower() in filter_taxa_lower]
+                new_subselect_group = [i for i in subselect_group if str(i).lower() in filter_taxa_lower]
+                new_subselect_family = [i for i in subselect_family if str(i).lower() in filter_taxa_lower]
+                new_subselect_order = [i for i in subselect_order if str(i).lower() in filter_taxa_lower]
+
+                if not quiet:
+                    print(f"Doing further subselection based on {taxon_mask_group} from taxon_metadata.csv")
+                    print(f"  species: reducing from {len(subselect_species)} to {len(new_subselect_species)}")
+                    print(f"  group: reducing from {len(subselect_group)} to {len(new_subselect_group)}")
+                    print(f"  family: reducing from {len(subselect_family)} to {len(new_subselect_family)}")
+                    print(f"  order: reducing from {len(subselect_order)} to {len(new_subselect_order)}")
+                    removed_species = set(subselect_species) - set(new_subselect_species)
+                    if removed_species:
+                        print(f"    removed species: {', '.join(removed_species)}")
+                    removed_group = set(subselect_group) - set(new_subselect_group)
+                    if removed_group:
+                        print(f"    removed group: {', '.join(removed_group)}")
+                    removed_family = set(subselect_family) - set(new_subselect_family)
+                    if removed_family:
+                        print(f"    removed family: {', '.join(removed_family)}")
+                    removed_order = set(subselect_order) - set(new_subselect_order)
+                    if removed_order:
+                        print(f"    removed order: {', '.join(removed_order)}")                    
+
+                subselect_species = new_subselect_species
+                subselect_group = new_subselect_group
+                subselect_family = new_subselect_family
+                subselect_order = new_subselect_order
+            else:
+                if not quiet:
+                    print(f"WARNING: {taxon_mask_group} not found in taxon_metadata.csv, skipping further subselection")
+    else:
+        if not quiet:
+            print(f"WARNING: taxon_mask_group not provided, skipping further subselection")  
 
     which_spp = [i in subselect_species for i in species]
     which_grp = [i in subselect_group for i in groups]

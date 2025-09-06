@@ -27,6 +27,7 @@ DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS = False
 DEFAULT_GZIP_OUTPUT = False
 DEFAULT_DO_CALIBRATION = True
 DEFAULT_FALLBACK_THRESHOLD = 50
+DEFAULT_TAXON_MASK_GROUP = None
 DEFAULT_QUIET = False
 
 _PACKAGE_DIR_PATH = Path(__file__).parent
@@ -48,6 +49,7 @@ def run_detector_on_files(
         gzip_output=DEFAULT_GZIP_OUTPUT,
         do_calibration=DEFAULT_DO_CALIBRATION,
         fallback_threshold=DEFAULT_FALLBACK_THRESHOLD,
+        taxon_mask_group=DEFAULT_TAXON_MASK_GROUP,
         quiet=DEFAULT_QUIET):
     
     input_file_paths = _expand_paths(input_file_paths)
@@ -77,7 +79,7 @@ def run_detector_on_files(
         detections, detect_df_dict = _run_detector_on_file(
             input_file_path, model, config_file_paths, hop_size, threshold,
             merge_overlaps, drop_uncertain, mask_ap_threshold, return_tax_level_detections,
-            do_calibration, fallback_threshold, quiet)
+            do_calibration, fallback_threshold, taxon_mask_group, quiet)
 
         if duration_output:
             output_file_path = _prep_for_output(
@@ -167,22 +169,24 @@ def _get_configuration_file_paths():
 def _run_detector_on_file(
         audio_file_path, model, paths, hop_size, threshold, merge_overlaps,
         drop_uncertain,mask_ap_threshold,return_tax_level_detections,do_calibration,
-        fallback_threshold,
-        quiet):
+        fallback_threshold,taxon_mask_group,quiet):
 
     p = paths
 
     calibrate_from_logits = True
     if do_calibration:
         if p.calibrators_from_logits.exists():
-            print('Calibrating from logits.')            
+            if not quiet:
+                print('Calibrating from logits.')            
             calib = p.calibrators_from_logits
         elif p.calibrators_from_probs.exists():
-            print('Calibrating from probabilities.')
+            if not quiet:
+                print('Calibrating from probabilities.')
             calib = p.calibrators_from_probs
             calibrate_from_logits = False
         else:
-            print('No calibration file found, proceeding without calibration.')
+            if not quiet:
+                print('No calibration file found, proceeding without calibration.')
             calib = None
     else:
         calib = None      
@@ -209,7 +213,8 @@ def _run_detector_on_file(
         mask_output_ap_threshold=mask_ap_threshold,
         test_set_performance_dir=p.test_set_performance,
         return_tax_level_detections=return_tax_level_detections,
-        fallback_threshold=fallback_threshold
+        fallback_threshold=fallback_threshold,
+        taxon_mask_group=taxon_mask_group
     )
 
 

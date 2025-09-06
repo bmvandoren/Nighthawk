@@ -14,7 +14,7 @@ MODEL_SAMPLE_RATE = 22050         # Hz
 MODEL_INPUT_DURATION = 1          # seconds
 
 DEFAULT_HOP_SIZE = 20             # percent of model input duration
-DEFAULT_THRESHOLD = 80            # percent
+DEFAULT_THRESHOLD = 50            # percent
 DEFAULT_AP_MASK_THRESHOLD = 0.7
 DEFAULT_MERGE_OVERLAPS = True
 DEFAULT_DROP_UNCERTAIN = True
@@ -26,6 +26,7 @@ DEFAULT_OUTPUT_DIR_PATH = None
 DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS = False
 DEFAULT_GZIP_OUTPUT = False
 DEFAULT_DO_CALIBRATION = True
+DEFAULT_FALLBACK_THRESHOLD = 50
 DEFAULT_QUIET = False
 
 _PACKAGE_DIR_PATH = Path(__file__).parent
@@ -46,6 +47,7 @@ def run_detector_on_files(
         return_tax_level_detections=DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS,
         gzip_output=DEFAULT_GZIP_OUTPUT,
         do_calibration=DEFAULT_DO_CALIBRATION,
+        fallback_threshold=DEFAULT_FALLBACK_THRESHOLD,
         quiet=DEFAULT_QUIET):
     
     input_file_paths = _expand_paths(input_file_paths)
@@ -75,7 +77,7 @@ def run_detector_on_files(
         detections, detect_df_dict = _run_detector_on_file(
             input_file_path, model, config_file_paths, hop_size, threshold,
             merge_overlaps, drop_uncertain, mask_ap_threshold, return_tax_level_detections,
-            do_calibration, quiet)
+            do_calibration, fallback_threshold, quiet)
 
         if duration_output:
             output_file_path = _prep_for_output(
@@ -165,6 +167,7 @@ def _get_configuration_file_paths():
 def _run_detector_on_file(
         audio_file_path, model, paths, hop_size, threshold, merge_overlaps,
         drop_uncertain,mask_ap_threshold,return_tax_level_detections,do_calibration,
+        fallback_threshold,
         quiet):
 
     p = paths
@@ -189,6 +192,10 @@ def _run_detector_on_file(
 
     # Change threshold from percentage to fraction.
     threshold /= 100
+    fallback_threshold /= 100
+    # if fallback_threshold<threshold, set fallback_threshold to threshold
+    if fallback_threshold < threshold:
+        fallback_threshold = threshold
 
     return run_reconstructed_model.run_model_on_file(
         model, audio_file_path, MODEL_SAMPLE_RATE, MODEL_INPUT_DURATION,
@@ -201,7 +208,9 @@ def _run_detector_on_file(
         postprocess_retain_only_overlaps=drop_uncertain,
         mask_output_ap_threshold=mask_ap_threshold,
         test_set_performance_dir=p.test_set_performance,
-        return_tax_level_detections=return_tax_level_detections)
+        return_tax_level_detections=return_tax_level_detections,
+        fallback_threshold=fallback_threshold
+    )
 
 
 def _get_model_predictions(

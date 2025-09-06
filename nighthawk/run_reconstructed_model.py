@@ -611,6 +611,56 @@ def combine_taxon_detections(detect_df_dict,
     return merged_df
 
 
+def apply_fallback_threshold(merged_df, fallback_threshold):
+    """
+    Apply fallback threshold to detections. If a detection's probability is below
+    the threshold, remove it from the most specific taxonomic level and fall back
+    to a higher-level detection. Continue falling back until threshold is met or
+    no higher level exists.
+    
+    Parameters:
+    merged_df: DataFrame with columns including 'species', 'group', 'family', 'order',
+               'prob_species', 'prob_group', 'prob_family', 'prob_order', 
+               'predicted_category', 'prob'
+    fallback_threshold: float, minimum probability threshold for retaining detections
+    
+    Returns:
+    merged_df: DataFrame with updated 'predicted_category' and 'prob' columns
+    """
+    if merged_df.shape[0] == 0:
+        return merged_df
+    
+    def apply_fallback_to_row(row):
+        # Define taxonomic hierarchy (most specific to least specific)
+        tax_levels = ['species', 'group', 'family', 'order']
+        prob_cols = ['prob_species', 'prob_group', 'prob_family', 'prob_order']
+        
+        # Find the best taxonomic level that meets the threshold
+        has_valid_detection = False
+        for tax_level, prob_col in zip(tax_levels, prob_cols):
+            if not has_valid_detection and pd.notna(row[tax_level]) and pd.notna(row[prob_col]):
+                if row[prob_col] >= fallback_threshold:
+                    row['predicted_category'] = row[tax_level]
+                    row['prob'] = row[prob_col]
+                    has_valid_detection = True
+                else:
+                    row[tax_level] = pd.NA
+                    row[prob_col] = pd.NA
+        if not has_valid_detection:
+            row['predicted_category'] = pd.NA
+            row['prob'] = pd.NA
+        return row
+            
+    
+    # Apply fallback logic
+    merged_df_fallback = merged_df.apply(apply_fallback_to_row, axis=1)
+    
+    # Remove rows where no valid prediction remains
+    merged_df_fallback = merged_df_fallback[~merged_df_fallback['predicted_category'].isna()]
+    
+    return merged_df_fallback
+
+
 def run_model_on_file(audio_model,
                       test_filename,
                       target_sr,
@@ -634,7 +684,8 @@ def run_model_on_file(audio_model,
                      postprocess_retain_only_overlaps=True, # only does something if postprocess_merge_overlaps=True
                      mask_output_ap_threshold=None,
                       test_set_performance_dir=None,
-                      return_tax_level_detections=False
+                      return_tax_level_detections=False,
+                      fallback_threshold=None
                      ):
     
     if not quiet:
@@ -801,7 +852,8 @@ def run_model_on_file(audio_model,
         group_family_map, species_group_map, species_family_map, quiet,
         postprocess_drop_singles_by_tax_level, postprocess_merge_overlaps,
         postprocess_retain_only_overlaps,
-        return_tax_level_detections)
+        return_tax_level_detections,
+        fallback_threshold)
     
     if not quiet:
         print("done")
@@ -842,7 +894,8 @@ def postprocess(
         group_family_map, species_group_map, species_family_map, quiet,
         postprocess_drop_singles_by_tax_level, postprocess_merge_overlaps,
         postprocess_retain_only_overlaps,
-        return_tax_level_detections=False):
+        return_tax_level_detections=False,
+        fallback_threshold=None):
 
     # merge taxonomic levels - this also enforces taxonomic consistency on the detections
     merged_df = combine_taxon_detections(detect_df_dict,
@@ -851,6 +904,7 @@ def postprocess(
                                         species_group_map,
                                         species_family_map)
     
+
     # postprocessing option 1
     # here, we look at each taxonomic level (species, group, etc.) in turn and 
     # drop any detections that are not overlapping with another detection of the same class
@@ -904,6 +958,14 @@ def postprocess(
     if not return_tax_level_detections:
         detect_df_dict = None
     
+    # apply fallback threshold if specified
+    if fallback_threshold is not None:
+        if not quiet:
+            print(f"applying fallback threshold of {fallback_threshold}")
+        merged_df = apply_fallback_threshold(merged_df, fallback_threshold)
+        if postprocess_merge_overlaps: # merge again if needed 
+            merged_df = process_overlapping_detections(merged_df,'merge')
+        
     return merged_df, detect_df_dict
 
 

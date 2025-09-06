@@ -17,6 +17,7 @@ def main():
         args.raven_output, args.audacity_output, args.duration_output,
         args.output_dir_path, args.ap_mask,
         args.tax_output, args.gzip_output, args.calibration,
+        args.fallback_threshold,
         args.quiet)
 
 def _parse_args():
@@ -42,7 +43,7 @@ def _parse_args():
     
     parser.add_argument(
         '--threshold',
-        help='the detection threshold, a number in [0, 100]. (default: 80)',
+        help='the detection threshold, a number in [0, 100]. (default: 50)',
         type=_parse_threshold,
         default=nh.DEFAULT_THRESHOLD)
 
@@ -69,6 +70,12 @@ def _parse_args():
         help='calibrate model outputs.',
         action=BooleanOptionalAction,
         default=nh.DEFAULT_DO_CALIBRATION)   
+    
+    parser.add_argument(
+        '--fallback-threshold',
+        help='the fallback threshold applied after taxonomic merge, a number in [0, 100]. (default: 50)',
+        type=_parse_threshold,
+        default=nh.DEFAULT_FALLBACK_THRESHOLD)    
 
     parser.add_argument(
         '--quiet',

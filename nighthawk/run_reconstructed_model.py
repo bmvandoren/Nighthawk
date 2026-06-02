@@ -8,6 +8,12 @@ from itertools import compress
 
 from nighthawk.probability_calibration_utils import load_calibrations
 from nighthawk.probability_calibration_utils import prob_to_logit
+from nighthawk.tensor_flow_debug import (
+    debug_enabled,
+    debug_note,
+    debug_section,
+    debug_tensor,
+)
 
 
 def process_overlapping_detections(df,combine_type,
@@ -611,6 +617,125 @@ def combine_taxon_detections(detect_df_dict,
     return merged_df
 
 
+def diagnose_empty_detections(
+        n_windows,
+        probs_df_dict,
+        detect_df_dict,
+        threshold,
+        clip_length_sec,
+        stride_sec,
+        family_order_map,
+        group_family_map,
+        species_group_map,
+        species_family_map,
+        postprocess_drop_singles_by_tax_level,
+        postprocess_merge_overlaps,
+        postprocess_retain_only_overlaps):
+
+    diagnosis = {
+        'n_windows': n_windows,
+        'threshold_pct': threshold * 100,
+    }
+
+    max_prob = 0.0
+    max_tax_level = None
+    max_taxon = None
+    max_start_sec = None
+    meta_cols = {'start_sec', 'end_sec'}
+
+    for tax_level, df in probs_df_dict.items():
+        for _, row in df.iterrows():
+            for col in df.columns:
+                if col in meta_cols:
+                    continue
+                prob = row[col]
+                if pd.notna(prob) and prob > max_prob:
+                    max_prob = float(prob)
+                    max_tax_level = tax_level
+                    max_taxon = col
+                    max_start_sec = float(row['start_sec'])
+
+    diagnosis['max_prob'] = max_prob
+    diagnosis['max_prob_pct'] = max_prob * 100
+    diagnosis['max_taxon'] = max_taxon
+    diagnosis['max_tax_level'] = max_tax_level
+    diagnosis['max_start_sec'] = max_start_sec
+
+    threshold_hits = []
+    for tax_level, df in detect_df_dict.items():
+        for _, row in df.iterrows():
+            threshold_hits.append({
+                'tax_level': tax_level,
+                'taxon': row['predicted_category'],
+                'prob': float(row['prob']),
+                'start_sec': float(row['start_sec']),
+                'end_sec': float(row['end_sec']),
+            })
+
+    diagnosis['threshold_hits'] = threshold_hits
+    diagnosis['n_threshold_hits'] = len(threshold_hits)
+    windows_above = sorted({hit['start_sec'] for hit in threshold_hits})
+    diagnosis['windows_above_threshold'] = windows_above
+    diagnosis['n_windows_above_threshold'] = len(windows_above)
+
+    if n_windows == 0:
+        diagnosis['reason'] = 'no_windows'
+        return diagnosis
+
+    if len(threshold_hits) == 0:
+        diagnosis['reason'] = 'below_threshold'
+        return diagnosis
+
+    merged_pre = combine_taxon_detections(
+        detect_df_dict, family_order_map, group_family_map,
+        species_group_map, species_family_map)
+    diagnosis['n_merged_pre_postprocess'] = len(merged_pre)
+
+    if len(merged_pre) == 0:
+        diagnosis['reason'] = 'taxonomic_merge'
+        return diagnosis
+
+    merged_after_drop = merged_pre
+    if postprocess_drop_singles_by_tax_level:
+        ct = 'drop'
+        drop_dict = {
+            tax_level: merge_tax_separately(
+                merged_pre, tax_level, ct, clip_length_sec, stride_sec)
+            for tax_level in ('order', 'family', 'group', 'species')}
+        merged_after_drop = combine_taxon_detections(
+            drop_dict, family_order_map, group_family_map,
+            species_group_map, species_family_map)
+
+    diagnosis['n_after_drop_uncertain'] = len(merged_after_drop)
+
+    if postprocess_drop_singles_by_tax_level and len(merged_after_drop) == 0:
+        diagnosis['reason'] = 'drop_uncertain'
+        if n_windows == 1:
+            diagnosis['drop_uncertain_detail'] = 'single_window'
+        elif diagnosis['n_windows_above_threshold'] == 1:
+            diagnosis['drop_uncertain_detail'] = 'single_window_above_threshold'
+        else:
+            diagnosis['drop_uncertain_detail'] = 'no_overlapping_same_taxon'
+        return diagnosis
+
+    merged_after_merge = merged_after_drop
+    if postprocess_merge_overlaps:
+        merged_after_merge = process_overlapping_detections(
+            merged_after_drop.copy(), 'merge')
+
+    merged_final = merged_after_merge
+    if postprocess_retain_only_overlaps and postprocess_merge_overlaps:
+        merged_final = remove_detections_by_duration(
+            merged_after_merge.copy(), clip_length_sec, stride_sec)
+
+    if len(merged_final) == 0 and len(merged_after_merge) > 0:
+        diagnosis['reason'] = 'retain_only_overlaps'
+        return diagnosis
+
+    diagnosis['reason'] = 'postprocess_other'
+    return diagnosis
+
+
 def run_model_on_file(audio_model,
                       test_filename,
                       target_sr,
@@ -739,6 +864,11 @@ def run_model_on_file(audio_model,
 
     if model_runner is not None:
         process_file = model_runner
+        if debug_enabled():
+            debug_section('run_model_on_file: model runner')
+            debug_note(
+                f'Using custom model_runner={model_runner.__name__} '
+                f'(production CLI uses detector._get_model_predictions).')
         if not quiet:
             print("processing file: using custom model runner")
         
@@ -769,9 +899,27 @@ def run_model_on_file(audio_model,
                       subselect_dict,
                       clip_length_sec, 
                       stride_sec)
+
+    if debug_enabled():
+        debug_section('After logits -> per-taxon DataFrames')
+        for tax_level, df in pred_df_dict.items():
+            debug_tensor(
+                f'logits_df_{tax_level}',
+                df,
+                note='rows = time windows; columns = taxon logits + start/end_sec',
+            )
     
     # convert logits to probabilities
     probs_df_dict = {key : apply_sigmoid_df(df) for key,df in pred_df_dict.items()}
+
+    if debug_enabled():
+        debug_section('After sigmoid (per-taxon probabilities)')
+        for tax_level, df in probs_df_dict.items():
+            debug_tensor(
+                f'probs_df_{tax_level}',
+                df,
+                note='each taxon column in [0,1]; independent sigmoids (multi-label)',
+            )
     
     # apply calibration
     if calibrators_fp is not None:
@@ -790,6 +938,8 @@ def run_model_on_file(audio_model,
     for key in detect_df_dict.copy():
         detect_df_dict[key].insert(2, 'path', test_filename)   
         detect_df_dict[key].insert(2, 'filename', os.path.basename(test_filename))
+
+    detect_df_dict_pre_postprocess = detect_df_dict
         
     # merge taxonomic levels
     if not quiet:
@@ -805,8 +955,17 @@ def run_model_on_file(audio_model,
     
     if not quiet:
         print("done")
+
+    diagnosis = None
+    if merged_df.empty:
+        diagnosis = diagnose_empty_detections(
+            steps, probs_df_dict, detect_df_dict_pre_postprocess, threshold,
+            clip_length_sec, stride_sec, family_order_map, group_family_map,
+            species_group_map, species_family_map,
+            postprocess_drop_singles_by_tax_level, postprocess_merge_overlaps,
+            postprocess_retain_only_overlaps)
         
-    return merged_df, detect_df_dict
+    return merged_df, detect_df_dict, diagnosis
 
 
 def load_taxonomy(taxonomy_fp, group_map_fp):

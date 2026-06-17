@@ -7,7 +7,6 @@ import json
 from itertools import compress
 
 from nighthawk.probability_calibration_utils import load_calibrations
-from nighthawk.probability_calibration_utils import prob_to_logit
 from nighthawk.tensor_flow_debug import (
     debug_enabled,
     debug_note,
@@ -511,17 +510,42 @@ def extract_detections_from_probabilities(df_probs,thresh_prob=0.5):
     return(res)
 
 
-def apply_calibration(output_df,calibrators,convert_to_logits=True):
+def apply_calibration(output_df, calibrators, calibrate_from_logits=True):
+    """Apply per-taxon calibrators and return calibrated probabilities.
+
+    When calibrate_from_logits is True, class columns must be raw model logits.
+    When False, class columns must already be probabilities (e.g. after sigmoid).
+    Calibrator output is always a probability in [0, 1].
+    """
+
     for column in output_df:
-        if column not in ['start_sec','end_sec']:
+        if column not in ['start_sec', 'end_sec']:
             if column in calibrators:
-                if convert_to_logits:
-                    output_df[column] = calibrators[column].predict(prob_to_logit(output_df[column]))
-                else:
-                    output_df[column] = calibrators[column].predict(output_df[column])
+                output_df[column] = calibrators[column].predict(
+                    output_df[column])
             else:
-                print("calibrator for %s not found; not calibrating this taxon" % column)
+                print(
+                    "calibrator for %s not found; not calibrating this taxon"
+                    % column)
     return output_df
+
+
+def logits_to_calibrated_probabilities(pred_df_dict, calibrators):
+    """Calibrate raw logits directly."""
+
+    return {
+        key: apply_calibration(df, calibrators, calibrate_from_logits=True)
+        for key, df in pred_df_dict.items()}
+
+
+def sigmoid_then_calibrate_probabilities(pred_df_dict, calibrators):
+    """Sigmoid logits, then apply calibrators fit on probabilities."""
+
+    probs_df_dict = {
+        key: apply_sigmoid_df(df) for key, df in pred_df_dict.items()}
+    return {
+        key: apply_calibration(df, calibrators, calibrate_from_logits=False)
+        for key, df in probs_df_dict.items()}
 
 
 def combine_taxon_detections(detect_df_dict,
@@ -908,29 +932,28 @@ def run_model_on_file(audio_model,
                 df,
                 note='rows = time windows; columns = taxon logits + start/end_sec',
             )
-    
-    # convert logits to probabilities
-    probs_df_dict = {key : apply_sigmoid_df(df) for key,df in pred_df_dict.items()}
+
+    if calibrators_fp is not None:
+        calibrators = load_calibrations(calibrators_fp)
+        if calibrate_from_logits:
+            probs_df_dict = logits_to_calibrated_probabilities(
+                pred_df_dict, calibrators)
+        else:
+            probs_df_dict = sigmoid_then_calibrate_probabilities(
+                pred_df_dict, calibrators)
+    else:
+        probs_df_dict = {
+            key: apply_sigmoid_df(df) for key, df in pred_df_dict.items()}
 
     if debug_enabled():
-        debug_section('After sigmoid (per-taxon probabilities)')
+        debug_section('After calibration / sigmoid (per-taxon probabilities)')
         for tax_level, df in probs_df_dict.items():
             debug_tensor(
                 f'probs_df_{tax_level}',
                 df,
-                note='each taxon column in [0,1]; independent sigmoids (multi-label)',
+                note='calibrated or sigmoid probabilities in [0,1]',
             )
-    
-    # apply calibration
-    if calibrators_fp is not None:
-        if not quiet:
-            print("doing calibration") 
-        calibrators = load_calibrations(calibrators_fp)
-        probs_df_dict = {key : apply_calibration(df,calibrators,convert_to_logits=calibrate_from_logits) for key,df in probs_df_dict.items()}
-    else:
-        if not quiet:
-            print("not doing calibration")
-        
+
     # apply thresholds to make detections
     detect_df_dict = { key: extract_detections_from_probabilities(df,threshold) for key,df in probs_df_dict.items() }
 

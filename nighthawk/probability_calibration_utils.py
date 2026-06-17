@@ -35,9 +35,14 @@ class _SigmoidProbabilityCalibration:
 
     """
     Sigmoid probability calibration.
-     
+
     This class implements sigmoid probability calibration as in scikit-learn:
     see https://scikit-learn.org/stable/modules/calibration.html#sigmoid.
+
+    ``predict(x)`` returns a calibrated probability. The input ``x`` must match
+    how the calibrator was fit: raw model logits (fromlogits CSV) or
+    probabilities (probability_calibrations.csv). Do not convert probabilities
+    back to logits before calling ``predict``.
     """
 
     def __init__(self, a, b):
@@ -45,4 +50,5 @@ class _SigmoidProbabilityCalibration:
         self._b = b
 
     def predict(self, x):
+        x = np.asarray(x, dtype=np.float64)
         return 1 / (1 + np.exp(self._a * x + self._b))

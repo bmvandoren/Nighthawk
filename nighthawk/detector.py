@@ -190,6 +190,12 @@ def _get_configuration_file_paths(resolved):
     paths.test_set_performance    = tc['test_set_performance']
     paths.calibrators_from_logits = tc['calibrators_from_logits']
 
+    # model_type drives runner selection: 'nh2' (batched, named-dict outputs)
+    # or 'legacy' (unbatched, positional-list outputs).  Default to 'nh2' when
+    # the manifest is absent (will be confirmed via _has_nh2_signature at
+    # runtime if the auto-detect path fires).
+    paths.model_type = (resolved.manifest or {}).get('model_type', 'nh2')
+
     return paths
 
 
@@ -214,7 +220,20 @@ def _run_detector_on_file(
     # Change threshold from percentage to fraction.
     threshold /= 100
 
-    model_runner = partial(_get_model_predictions, batch_size=batch_size)
+    # Select the runner based on model_type from the manifest.  When the
+    # manifest is absent (--model-path to a legacy tree without manifest.json)
+    # the model_type defaults to 'nh2', so we probe the actual signature and
+    # fall back to the legacy runner if needed.
+    model_type = getattr(p, 'model_type', 'nh2')
+    if model_type != 'legacy' and not _has_nh2_signature(model):
+        model_type = 'legacy'
+    runner_fn = (
+        _get_model_predictions_legacy if model_type == 'legacy'
+        else _get_model_predictions
+    )
+    if model_type == 'legacy':
+        print('Using legacy (unbatched) inference runner.')
+    model_runner = partial(runner_fn, batch_size=batch_size)
 
     return run_reconstructed_model.run_model_on_file(
         model, audio_file_path, MODEL_SAMPLE_RATE, MODEL_INPUT_DURATION,
@@ -279,6 +298,62 @@ def _get_model_predictions(
     # Concatenate batches and return in canonical order.
     predictions = [np.concatenate(level_arrays[lv], axis=0) for lv in _CANONICAL_LEVELS]
     return predictions, [], input_count
+
+
+def _get_model_predictions_legacy(
+        model, file_path, input_dur, hop_dur, target_sr=22050, batch_size=64):
+    """Run a pre-nh2 (legacy) model on all windows of an audio file.
+
+    Legacy SavedModels are directly callable with a single unbatched
+    ``(22050,)`` waveform tensor and return a positional list of four
+    ``1 x n_taxa`` logit tensors ``[order, family, group, species]``.
+
+    The ``batch_size`` parameter is accepted but ignored (legacy models process
+    one window at a time).
+
+    Returns:
+        predictions: list of four numpy arrays ``[order, family, group, species]``,
+            each of shape ``(num_windows, n_taxa)`` — same contract as the nh2
+            runner so run_reconstructed_model stays untouched.
+        bad_inds: empty list.
+        input_count: total number of windows processed.
+    """
+    import tensorflow as tf
+
+    start_time = time.time()
+
+    window_preds = [
+        model(tf.constant(samples[np.newaxis, :], dtype=tf.float32))
+        for samples in _generate_model_inputs(file_path, input_dur, hop_dur, target_sr)
+    ]
+
+    elapsed_time = time.time() - start_time
+    _report_processing_speed(file_path, elapsed_time)
+
+    if not window_preds:
+        # No windows (very short file) — return empty arrays.
+        return [np.zeros((0, 0))] * 4, [], 0
+
+    # window_preds is a list of per-window outputs.  Each per-window output is
+    # either a list/tuple of four [1, n_taxa] tensors (positional) or a tensor
+    # directly.  We transpose to get one array per level.
+    predictions = [
+        np.squeeze(np.array(level_outputs), axis=1)
+        for level_outputs in zip(*window_preds)
+    ]
+    return predictions, [], len(window_preds)
+
+
+def _has_nh2_signature(model):
+    """Return True if the loaded model has the nh2 batched waveform signature."""
+    try:
+        sig = model.signatures.get('serving_default')
+        if sig is None:
+            return False
+        input_keys = list(sig.structured_input_signature[1].keys())
+        return 'waveform' in input_keys
+    except Exception:
+        return False
 
 
 def _generate_model_inputs(file_path, input_dur, hop_dur, target_sr=22050):

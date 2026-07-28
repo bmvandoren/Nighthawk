@@ -424,3 +424,62 @@ def test_remove_cached_model_all(tmp_path):
         (d / ".ready").write_text("ok")
     remove_cached_model("americas", cache_dir=cache)
     assert list_cached_models(cache_dir=cache) == []
+
+
+# ---------------------------------------------------------------------------
+# Legacy model_type support — _load_bundle + _get_configuration_file_paths
+# ---------------------------------------------------------------------------
+
+_LEGACY_MANIFEST = {
+    **{k: v for k, v in _MANIFEST.items() if k != "model_type"},
+    "name": "300-americas",
+    "version": "1.0.0",
+    "model_type": "legacy",
+    "taxonomy_version": "select_v6",
+    "num_classes": {"order": 4, "family": 19, "group": 17, "species": 130},
+}
+
+
+def _make_legacy_bundle_dir(root: Path) -> Path:
+    """Create a minimal fake legacy bundle (select_v6 species count)."""
+    return _make_bundle_dir(root, manifest=_LEGACY_MANIFEST)
+
+
+def test_load_bundle_legacy_model_type(tmp_path):
+    """Bundle with model_type='legacy' round-trips through _load_bundle."""
+    bundle = _make_legacy_bundle_dir(tmp_path)
+    resolved = _load_bundle(bundle, source="local-dir")
+    assert resolved.name == "300-americas"
+    assert resolved.version == "1.0.0"
+    assert resolved.manifest.get("model_type") == "legacy"
+
+
+def test_load_bundle_legacy_model_type_in_resolved_manifest(tmp_path):
+    """model_type is accessible on resolved.manifest for detector dispatch."""
+    bundle = _make_legacy_bundle_dir(tmp_path)
+    resolved = _load_bundle(bundle, source="local-dir")
+    model_type = (resolved.manifest or {}).get("model_type", "nh2")
+    assert model_type == "legacy"
+
+
+def test_load_bundle_nh2_model_type_default(tmp_path):
+    """nh2 bundle without explicit model_type defaults to 'nh2' on lookup."""
+    # Standard _MANIFEST has no model_type key — simulate the default behaviour.
+    manifest_no_type = {k: v for k, v in _MANIFEST.items() if k != "model_type"}
+    bundle = _make_bundle_dir(tmp_path, manifest=manifest_no_type)
+    resolved = _load_bundle(bundle, source="local-dir")
+    model_type = (resolved.manifest or {}).get("model_type", "nh2")
+    assert model_type == "nh2"
+
+
+def test_load_bundle_manifest_less_model_type_defaults_nh2(tmp_path):
+    """A manifest-less bundle (legacy fallback path) also defaults to 'nh2'."""
+    bundle = _make_bundle_dir(tmp_path)
+    (bundle / "manifest.json").unlink()
+    resolved = _load_bundle(
+        bundle, source="local-dir",
+        requested_name="americas", requested_version="0.4.0",
+    )
+    # resolved.manifest is empty dict for manifest-less bundles.
+    model_type = (resolved.manifest or {}).get("model_type", "nh2")
+    assert model_type == "nh2"

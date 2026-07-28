@@ -181,10 +181,75 @@ it to `latest`.
 **Race note**: the registry update is a read-modify-write.  Don't run two publishers
 simultaneously against the same registry — the last writer wins.
 
+### Packaging a legacy (pre-nh2) model
+
+Legacy models that are already assembled as a bundle tree (e.g. a previous
+`nighthawk` release tree) can also be published to the same repository using
+`--legacy` mode.  The bundle must contain:
+
+```
+<bundle-dir>/
+  saved_model_with_preprocessing/
+    saved_model.pb
+    variables/
+  taxonomy/
+    taxonomy_version.txt
+    orders.txt
+    families.txt
+    groups.txt
+    species.txt
+    ebird_taxonomy.csv
+    groups_ebird_codes.csv
+  test_config/
+    test_config.json
+    probability_calibrations_logistic_fromlogits.csv  ← logit-space calibrators required
+    test_set_performance/
+      taxon_summary_order.csv
+      taxon_summary_family.csv
+      taxon_summary_group.csv
+      taxon_summary_species.csv
+```
+
+**Note:** Legacy models must have `probability_calibrations_logistic_fromlogits.csv`
+(calibrators fit in logit space).  The older `probability_calibrations.csv`
+(probability-space) is not supported.
+
+```bash
+conda activate nighthawk-training-py3.13
+cd nighthawk-development
+
+# Build artifact only
+python -m nh2.package_detector \
+    --legacy \
+    --bundle-dir /path/to/legacy/bundle \
+    --out-dir /home/vandoren/projects/nighthawk/Nighthawk-repo/nighthawk \
+    --model-name 300-americas \
+    --model-version 1.0.0
+
+# Build + publish to S3
+python -m nh2.package_detector \
+    --legacy \
+    --bundle-dir /path/to/legacy/bundle \
+    --out-dir /home/vandoren/projects/nighthawk/Nighthawk-repo/nighthawk \
+    --model-name 300-americas \
+    --model-version 1.0.0 \
+    --publish \
+    --repo-url https://my-nighthawk-models.s3.us-east-1.amazonaws.com/ \
+    --bucket my-nighthawk-models \
+    --region us-east-1
+```
+
+The resulting `manifest.json` records `"model_type": "legacy"`, which tells the
+client to use the original unbatched calling convention for that model.  A legacy
+bundle loaded via `--model-path` (without a manifest) is also auto-detected by
+checking the SavedModel's signature.
+
 ### Useful publish flags summary
 
 | Flag | Description |
 |---|---|
+| `--legacy` | Package a pre-nh2 bundle tree instead of an nh2 experiment dir |
+| `--bundle-dir` | Path to assembled bundle tree (required with `--legacy`) |
 | `--model-name` | Registry key (e.g. `americas`) |
 | `--model-version` | Artifact version (e.g. `0.4.0`) |
 | `--publish` | Trigger the S3 upload + registry update |

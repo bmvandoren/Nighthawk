@@ -377,7 +377,7 @@ def _get_model_predictions_legacy(
     start_time = time.time()
 
     window_preds = [
-        model(tf.constant(samples[np.newaxis, :], dtype=tf.float32))
+        model(tf.constant(samples, dtype=tf.float32))
         for samples in _generate_model_inputs(file_path, input_dur, hop_dur, target_sr)
     ]
 

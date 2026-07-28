@@ -271,6 +271,10 @@ checking the SavedModel's signature.
 
 ```bash
 nighthawk my_recording.wav
+
+nighthawk ../Nighthawk-repo/test_inputs/test1.wav \
+    --output-dir ../playground \
+    --threshold 50
 ```
 
 On first run this downloads `americas@latest` (~190 MB) and caches it.
@@ -279,7 +283,12 @@ Subsequent runs are instant — no download.
 ### Pin a version for reproducible results
 
 ```bash
-nighthawk my_recording.wav --model-version 0.4.0
+nighthawk my_recording.wav --model-version 0.1.0-322
+
+nighthawk ../Nighthawk-repo/test_inputs/test1.wav \
+    --model-version 0.1.0-322 \
+    --output-dir ../playground/322 \
+    --threshold 50
 ```
 
 Results are guaranteed to match any other run with the same `--model-version` flag, regardless

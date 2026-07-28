@@ -3,7 +3,7 @@
 # To create a Python environment named `nighthawk-dev` in which to work
 # on the `nighthawk` package:
 #
-#     conda create -n nighthawk-dev python=3.10
+#     conda create -n nighthawk-dev python=3.13
 #     conda activate nighthawk-dev
 #     pip install -e <nighthawk package dir path>
 #     pip install build twine
@@ -79,7 +79,7 @@ name = 'nighthawk'
 version = '0.3.1'
 description = 'Nighthawk avian nocturnal flight call detector'
 readme = 'README.md'
-requires-python = '~=3.10.0'
+requires-python = '>=3.10'
 license = {file = 'LICENSE'}
 authors = [
   {name = 'Benjamin Van Doren', email = 'vandoren@cornell.edu'},
@@ -89,11 +89,11 @@ classifiers = [
     'Operating System :: OS Independent',
 ]
 dependencies = [
-    'librosa~=0.10.0',
-    'pandas~=2.2.0',
+    'librosa>=0.10,<1.0',
+    'pandas>=2.2',
     'pyyaml',
-    'tensorflow~=2.12.0;platform_system != "Darwin" or platform_machine != "arm64"',
-    'tensorflow-macos~=2.12.0;platform_system == "Darwin" and platform_machine == "arm64"',
+    'tensorflow[and-cuda]~=2.21.0;platform_system == "Linux"',
+    'tensorflow~=2.21.0;platform_system != "Linux"',
 ]
 
 [project.urls]

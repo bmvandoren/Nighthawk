@@ -7,7 +7,6 @@ import json
 from itertools import compress
 
 from nighthawk.probability_calibration_utils import load_calibrations
-from nighthawk.probability_calibration_utils import prob_to_logit
 
 
 def process_overlapping_detections(df,combine_type,
@@ -505,16 +504,24 @@ def extract_detections_from_probabilities(df_probs,thresh_prob=0.5):
     return(res)
 
 
-def apply_calibration(output_df,calibrators,convert_to_logits=True):
+def apply_calibration(output_df, calibrators):
+    """Apply Platt calibration to a logit DataFrame, returning probabilities.
+
+    Calibrators are sigmoid functions fit in logit space, so they accept raw
+    logits and output calibrated probabilities directly.  Taxa without a
+    calibrator fall back to a plain sigmoid so the output is always a
+    probability.
+    """
     for column in output_df:
-        if column not in ['start_sec','end_sec']:
-            if column in calibrators:
-                if convert_to_logits:
-                    output_df[column] = calibrators[column].predict(prob_to_logit(output_df[column]))
-                else:
-                    output_df[column] = calibrators[column].predict(output_df[column])
-            else:
-                print("calibrator for %s not found; not calibrating this taxon" % column)
+        if column in ('start_sec', 'end_sec'):
+            continue
+        if column in calibrators:
+            # calibrator.predict: 1/(1+exp(a*logit+b)) -> calibrated prob
+            output_df[column] = calibrators[column].predict(output_df[column])
+        else:
+            # no calibrator available: plain sigmoid to convert logit -> prob
+            print("calibrator for %s not found; applying sigmoid without calibration" % column)
+            output_df[column] = sigmoid(output_df[column])
     return output_df
 
 
@@ -623,7 +630,6 @@ def run_model_on_file(audio_model,
                         taxonomy_fp,
                         group_map_fp,
                         calibrators_fp=None,
-                        calibrate_from_logits=True,
                       test_config_fp=None,
                          stream=False,
                          threshold = 0.5,
@@ -770,19 +776,17 @@ def run_model_on_file(audio_model,
                       clip_length_sec, 
                       stride_sec)
     
-    # convert logits to probabilities
-    probs_df_dict = {key : apply_sigmoid_df(df) for key,df in pred_df_dict.items()}
-    
-    # apply calibration
+    # convert logits to probabilities (with optional calibration)
     if calibrators_fp is not None:
         if not quiet:
-            print("doing calibration") 
+            print("doing calibration")
         calibrators = load_calibrations(calibrators_fp)
-        probs_df_dict = {key : apply_calibration(df,calibrators,convert_to_logits=calibrate_from_logits) for key,df in probs_df_dict.items()}
+        probs_df_dict = {key: apply_calibration(df, calibrators) for key, df in pred_df_dict.items()}
     else:
         if not quiet:
             print("not doing calibration")
-        
+        probs_df_dict = {key: apply_sigmoid_df(df) for key, df in pred_df_dict.items()}
+
     # apply thresholds to make detections
     detect_df_dict = { key: extract_detections_from_probabilities(df,threshold) for key,df in probs_df_dict.items() }
 

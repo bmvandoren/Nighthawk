@@ -162,7 +162,6 @@ def _get_configuration_file_paths():
     config = _CONFIG_DIR_PATH
     paths.config = config / 'test_config.json'
     paths.test_set_performance = config / 'test_set_performance'
-    paths.calibrators_from_probs = config / 'probability_calibrations.csv'
     paths.calibrators_from_logits = config / 'probability_calibrations_logistic_fromlogits.csv'
 
     return paths
@@ -175,20 +174,13 @@ def _run_detector_on_file(
 
     p = paths
 
-    calibrate_from_logits = True
-    if do_calibration:
-        if p.calibrators_from_logits.exists():
-            print('Calibrating from logits.')            
-            calib = p.calibrators_from_logits
-        elif p.calibrators_from_probs.exists():
-            print('Calibrating from probabilities.')
-            calib = p.calibrators_from_probs
-            calibrate_from_logits = False
-        else:
-            print('No calibration file found, proceeding without calibration.')
-            calib = None
+    if do_calibration and p.calibrators_from_logits.exists():
+        print('Calibrating from logits.')
+        calib = p.calibrators_from_logits
     else:
-        calib = None      
+        if do_calibration:
+            print('No calibration file found, proceeding without calibration.')
+        calib = None
     
     # Change hop size from percentage to seconds.
     hop_dur = hop_size / 100 * MODEL_INPUT_DURATION
@@ -201,7 +193,7 @@ def _run_detector_on_file(
     return run_reconstructed_model.run_model_on_file(
         model, audio_file_path, MODEL_SAMPLE_RATE, MODEL_INPUT_DURATION,
         hop_dur, p.species, p.groups, p.families, p.orders,
-        p.ebird_taxonomy, p.group_ebird_codes, calib, calibrate_from_logits,
+        p.ebird_taxonomy, p.group_ebird_codes, calib,
         p.config, stream=False, threshold=threshold, quiet=quiet,
         model_runner=model_runner,
         postprocess_drop_singles_by_tax_level=drop_uncertain,

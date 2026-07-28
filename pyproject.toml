@@ -90,6 +90,7 @@ classifiers = [
 ]
 dependencies = [
     'librosa>=0.10,<1.0',
+    'soundfile>=0.12',
     'pandas>=2.2',
     'platformdirs>=3',
     'pyyaml',

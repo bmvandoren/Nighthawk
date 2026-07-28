@@ -7,6 +7,7 @@ import time
 
 import librosa
 import numpy as np
+import soundfile as sf
 
 import nighthawk.run_reconstructed_model as run_reconstructed_model
 
@@ -107,6 +108,11 @@ def run_detector_on_files(
             merge_overlaps, drop_uncertain, mask_ap_threshold, return_tax_level_detections,
             do_calibration, quiet, batch_size)
 
+        # For sub-1s recordings, write the zero-padded clip so the user can
+        # hear exactly what the model analyzed.
+        if librosa.get_duration(path=input_file_path) < MODEL_INPUT_DURATION:
+            _export_zero_padded_audio(input_file_path, output_dir_path)
+
         if duration_output:
             output_file_path = _prep_for_output(
                 input_file_path, output_dir_path, '.txt',  descriptor='duration', gzip=False)
@@ -199,6 +205,42 @@ def _get_configuration_file_paths(resolved):
     return paths
 
 
+def _stride_seconds(hop_size):
+    """Sliding-window stride in seconds (hop_size is percent of model window)."""
+    return hop_size / 100 * MODEL_INPUT_DURATION
+
+
+def _min_duration_for_two_windows(hop_size):
+    """Minimum file duration that can yield two overlapping analysis windows."""
+    return MODEL_INPUT_DURATION + _stride_seconds(hop_size)
+
+
+def _resolve_drop_uncertain_for_file(audio_file_path, hop_size, drop_uncertain, quiet):
+    """Return the effective drop_uncertain setting for this file.
+
+    If the recording is too short to ever produce two overlapping windows,
+    ``--drop-uncertain`` cannot be satisfied and is automatically disabled
+    for that file only.
+
+    Returns (effective_drop_uncertain, was_relaxed).
+    """
+    if not drop_uncertain:
+        return drop_uncertain, False
+
+    file_dur = librosa.get_duration(path=audio_file_path)
+    min_dur = _min_duration_for_two_windows(hop_size)
+    if file_dur >= min_dur:
+        return drop_uncertain, False
+
+    if not quiet:
+        stride = _stride_seconds(hop_size)
+        print(
+            f'NOTE: Recording is short ({file_dur:.3f} s < '
+            f'{MODEL_INPUT_DURATION} s + {stride:.3f} s stride); '
+            f'applying --no-drop-uncertain automatically.')
+    return False, True
+
+
 def _run_detector_on_file(
         audio_file_path, model, paths, hop_size, threshold, merge_overlaps,
         drop_uncertain,mask_ap_threshold,return_tax_level_detections,do_calibration,
@@ -215,10 +257,16 @@ def _run_detector_on_file(
         calib = None
     
     # Change hop size from percentage to seconds.
-    hop_dur = hop_size / 100 * MODEL_INPUT_DURATION
+    hop_dur = _stride_seconds(hop_size)
 
     # Change threshold from percentage to fraction.
     threshold /= 100
+
+    # For recordings shorter than one model window + stride, --drop-uncertain
+    # can never be satisfied (only one window is produced), so disable it for
+    # this file and let the single-window detection through.
+    drop_uncertain, _ = _resolve_drop_uncertain_for_file(
+        audio_file_path, hop_size, drop_uncertain, quiet)
 
     # Select the runner based on model_type from the manifest.  When the
     # manifest is absent (--model-path to a legacy tree without manifest.json)
@@ -294,6 +342,12 @@ def _get_model_predictions(
 
     elapsed_time = time.time() - start_time
     _report_processing_speed(file_path, elapsed_time)
+
+    if input_count == 0:
+        # No windows were generated (e.g. a truly empty or zero-length file).
+        # Zero-padding in _generate_model_inputs handles the sub-1s case, so
+        # this guard is a safety net for genuinely unreadable/empty files.
+        return [np.zeros((0, 0))] * 4, [], 0
 
     # Concatenate batches and return in canonical order.
     predictions = [np.concatenate(level_arrays[lv], axis=0) for lv in _CANONICAL_LEVELS]
@@ -376,6 +430,19 @@ def _generate_model_inputs(file_path, input_dur, hop_dur, target_sr=22050):
             res_type='soxr_hq')
 
         sample_count = len(samples)
+        if sample_count < input_length:
+            # File is shorter than one model window.  Warn once (on the first
+            # load chunk) and center-pad with zeros so exactly one window is
+            # produced.  The padded WAV is exported by run_detector_on_files
+            # for user inspection.
+            if load_offset == 0:
+                print(
+                    f'Warning: audio duration ({file_dur:.3f} s) is less than '
+                    f'the model input duration ({input_dur} s); padding with '
+                    f'zeros on both sides to center the audio.')
+            samples = _pad_audio_center(samples, input_length)
+            sample_count = len(samples)
+
         start_index = 0
         end_index = input_length
 
@@ -385,6 +452,37 @@ def _generate_model_inputs(file_path, input_dur, hop_dur, target_sr=22050):
             end_index += hop_length
 
         load_offset += load_hop_dur
+
+
+def _pad_audio_center(samples, min_length):
+    """Pad with zeros to at least min_length samples, keeping audio centered."""
+    sample_count = len(samples)
+    if sample_count >= min_length:
+        return samples
+    pad_total = min_length - sample_count
+    pad_left = pad_total // 2
+    pad_right = pad_total - pad_left
+    return np.pad(samples, (pad_left, pad_right), mode='constant')
+
+
+def _export_zero_padded_audio(
+        file_path, output_dir_path=None, target_sr=MODEL_SAMPLE_RATE,
+        input_dur=MODEL_INPUT_DURATION):
+    """Load audio, center-pad to input_dur, and write a *_padded.wav file.
+
+    Allows the user to hear exactly what the model analyzed for a short
+    recording.  Returns the output path, or None if no padding was needed.
+    """
+    samples, _ = librosa.load(file_path, sr=target_sr, res_type='soxr_hq')
+    input_length = int(round(input_dur * target_sr))
+    if len(samples) >= input_length:
+        return None
+    padded = _pad_audio_center(samples, input_length)
+    output_file_path = _prep_for_output(
+        Path(file_path), output_dir_path, '.wav', descriptor='padded',
+        gzip=False)
+    sf.write(str(output_file_path), padded, target_sr, 'PCM_16')
+    return output_file_path
 
 
 def _report_processing_speed(file_path, elapsed_time):

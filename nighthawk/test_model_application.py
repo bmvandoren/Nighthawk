@@ -2,6 +2,7 @@ from pathlib import Path
 import gc
 import time
 
+import numpy as np
 import tensorflow as tf
 
 
@@ -12,7 +13,8 @@ RECORDING_DURATION = 36000
 HOP_DURATION = .2
 RECORD_COUNT = int(round(RECORDING_DURATION / HOP_DURATION))
 RECORD_SIZE = 22050
-MESSAGE_PERIOD = 64
+BATCH_SIZE = 64
+MESSAGE_PERIOD = 64 * BATCH_SIZE  # print roughly every 64 batches
 CHUNK_DURATION = 1000
 CHUNK_RECORD_COUNT = int(round(CHUNK_DURATION / HOP_DURATION))
 
@@ -33,6 +35,7 @@ def load_model():
 
 
 def get_samples():
+    """Return a single 1-second waveform.  Batching is done in apply_model_*."""
     return tf.random.uniform((RECORD_SIZE,), minval=-.9, maxval=.9)
 
 
@@ -55,40 +58,54 @@ def time_processing(function, *args):
 
 
 def apply_model_and_retain_results(model, samples):
+    """Run the model on RECORD_COUNT windows using batched inference."""
+    sig = model.signatures['serving_default']
+    # Pre-build a full batch of identical samples (simulates sliding-window input).
+    batch = tf.stack([samples] * BATCH_SIZE)  # [BATCH_SIZE, RECORD_SIZE]
 
     results = []
+    num_full_batches = RECORD_COUNT // BATCH_SIZE
+    remainder = RECORD_COUNT % BATCH_SIZE
 
-    for i in range(RECORD_COUNT):
+    for i in range(num_full_batches):
+        if i != 0 and (i * BATCH_SIZE) % MESSAGE_PERIOD == 0:
+            print(i * BATCH_SIZE * HOP_DURATION)
+        results.append(sig(waveform=batch))
 
-        if i != 0 and i % MESSAGE_PERIOD == 0:
-            print(i * HOP_DURATION)
-        
-        results.append(model(samples))
+    if remainder:
+        small_batch = tf.stack([samples] * remainder)
+        results.append(sig(waveform=small_batch))
 
 
 def apply_model_and_retain_result_chunks(model, samples):
+    """Run model in chunks, periodically discarding results to limit memory."""
+    sig = model.signatures['serving_default']
+    batch = tf.stack([samples] * BATCH_SIZE)
+    results = []
 
-    for i in range(RECORD_COUNT):
+    num_full_batches = RECORD_COUNT // BATCH_SIZE
+    for i in range(num_full_batches):
+        if i != 0 and (i * BATCH_SIZE) % MESSAGE_PERIOD == 0:
+            print(i * BATCH_SIZE * HOP_DURATION)
 
-        if i != 0 and i % MESSAGE_PERIOD == 0:
-            print(i * HOP_DURATION)
-
-        if i % CHUNK_RECORD_COUNT == 0:
+        if i % (CHUNK_RECORD_COUNT // BATCH_SIZE) == 0 and i != 0:
             print('discarding results...')
             results = []
             gc.collect()
 
-        results.append(model(samples))
+        results.append(sig(waveform=batch))
 
 
 def apply_model_and_discard_results(model, samples):
+    """Run model and discard all results (measures pure inference throughput)."""
+    sig = model.signatures['serving_default']
+    batch = tf.stack([samples] * BATCH_SIZE)
 
-    for i in range(RECORD_COUNT):
-
-        if i != 0 and i % MESSAGE_PERIOD == 0:
-            print(i * HOP_DURATION)
-
-        model(samples)
+    num_full_batches = RECORD_COUNT // BATCH_SIZE
+    for i in range(num_full_batches):
+        if i != 0 and (i * BATCH_SIZE) % MESSAGE_PERIOD == 0:
+            print(i * BATCH_SIZE * HOP_DURATION)
+        sig(waveform=batch)
 
 
 if __name__ == '__main__':

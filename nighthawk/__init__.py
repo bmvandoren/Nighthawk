@@ -13,6 +13,7 @@ from .detector import (
     DEFAULT_GZIP_OUTPUT,
     DEFAULT_DO_CALIBRATION,
     DEFAULT_QUIET,
+    DEFAULT_BATCH_SIZE,
     MODEL_INPUT_DURATION,
     MODEL_SAMPLE_RATE,
     run_detector_on_files

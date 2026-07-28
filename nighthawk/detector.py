@@ -1,6 +1,7 @@
 """Functions and constants for the Nighthawk NFC detector."""
 
 
+from functools import partial
 from pathlib import Path
 import time
 
@@ -27,6 +28,10 @@ DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS = False
 DEFAULT_GZIP_OUTPUT = False
 DEFAULT_DO_CALIBRATION = True
 DEFAULT_QUIET = False
+DEFAULT_BATCH_SIZE = 64           # windows per model call
+
+# Canonical output level order matching nh2 model heads.
+_CANONICAL_LEVELS = ['order', 'family', 'group', 'species']
 
 _PACKAGE_DIR_PATH = Path(__file__).parent
 _MODEL_DIR_PATH = _PACKAGE_DIR_PATH / 'saved_model_with_preprocessing'
@@ -46,7 +51,8 @@ def run_detector_on_files(
         return_tax_level_detections=DEFAULT_RETURN_TAX_LEVEL_PREDICTIONS,
         gzip_output=DEFAULT_GZIP_OUTPUT,
         do_calibration=DEFAULT_DO_CALIBRATION,
-        quiet=DEFAULT_QUIET):
+        quiet=DEFAULT_QUIET,
+        batch_size=DEFAULT_BATCH_SIZE):
     
     input_file_paths = _expand_paths(input_file_paths)
     file_count = len(input_file_paths)
@@ -75,7 +81,7 @@ def run_detector_on_files(
         detections, detect_df_dict = _run_detector_on_file(
             input_file_path, model, config_file_paths, hop_size, threshold,
             merge_overlaps, drop_uncertain, mask_ap_threshold, return_tax_level_detections,
-            do_calibration, quiet)
+            do_calibration, quiet, batch_size)
 
         if duration_output:
             output_file_path = _prep_for_output(
@@ -165,7 +171,7 @@ def _get_configuration_file_paths():
 def _run_detector_on_file(
         audio_file_path, model, paths, hop_size, threshold, merge_overlaps,
         drop_uncertain,mask_ap_threshold,return_tax_level_detections,do_calibration,
-        quiet):
+        quiet, batch_size=DEFAULT_BATCH_SIZE):
 
     p = paths
 
@@ -190,12 +196,14 @@ def _run_detector_on_file(
     # Change threshold from percentage to fraction.
     threshold /= 100
 
+    model_runner = partial(_get_model_predictions, batch_size=batch_size)
+
     return run_reconstructed_model.run_model_on_file(
         model, audio_file_path, MODEL_SAMPLE_RATE, MODEL_INPUT_DURATION,
         hop_dur, p.species, p.groups, p.families, p.orders,
-        p.ebird_taxonomy, p.group_ebird_codes, calib, calibrate_from_logits, 
+        p.ebird_taxonomy, p.group_ebird_codes, calib, calibrate_from_logits,
         p.config, stream=False, threshold=threshold, quiet=quiet,
-        model_runner=_get_model_predictions,
+        model_runner=model_runner,
         postprocess_drop_singles_by_tax_level=drop_uncertain,
         postprocess_merge_overlaps=merge_overlaps,
         postprocess_retain_only_overlaps=drop_uncertain,
@@ -205,30 +213,53 @@ def _run_detector_on_file(
 
 
 def _get_model_predictions(
-        model, file_path, input_dur, hop_dur, target_sr=22050):
-    
+        model, file_path, input_dur, hop_dur, target_sr=22050, batch_size=64):
+    """Run the model on all windows of an audio file using batched inference.
+
+    Feeds windows in batches of ``batch_size`` to the nh2 SavedModel, which
+    accepts a batched waveform input ``[B, 22050]`` and returns a dict of named
+    logit tensors ``{order, family, group, species}``.  Collecting windows into
+    batches substantially improves throughput on both GPU and CPU compared to
+    single-window inference.
+
+    Returns:
+        predictions: list of four numpy arrays ``[order, family, group, species]``,
+            each of shape ``(num_windows, n_taxa)`` — same contract as before.
+        bad_inds: empty list (no bad-index detection in this runner).
+        input_count: total number of windows processed.
+    """
+    import tensorflow as tf
+
     start_time = time.time()
 
-    # Get model predictions for sequence of model inputs. For each input
-    # the model yields a list of four 1 x n tensors that hold order, family,
-    # group, and species logits, respectively. So the result of the following
-    # is a list of lists of four tensors.
-    predictions = [
-        model(samples) for samples in
-        _generate_model_inputs(file_path, input_dur, hop_dur, target_sr)]
+    sig = model.signatures['serving_default']
 
-    # Put order, family, group and species logit tensors into their
-    # own two-dimensional NumPy arrays, squeezing out the first tensor
-    # dimension, which always has length one. The result is a list of four
-    # two dimensional NumPy arrays, one each for order, family,
-    # group, and species. The first index of each array is for input
-    # and the second is for logit.
-    predictions = [np.squeeze(np.array(p), axis=1) for p in zip(*predictions)]
+    # Accumulate per-level results across batches.
+    level_arrays = {lv: [] for lv in _CANONICAL_LEVELS}
+    input_count = 0
+    pending = []
+
+    def _flush(windows):
+        batch = tf.constant(np.stack(windows), dtype=tf.float32)  # [B, 22050]
+        out = sig(waveform=batch)
+        for lv in _CANONICAL_LEVELS:
+            level_arrays[lv].append(out[lv].numpy())  # [B, n_taxa]
+
+    for samples in _generate_model_inputs(file_path, input_dur, hop_dur, target_sr):
+        pending.append(samples)
+        input_count += 1
+        if len(pending) == batch_size:
+            _flush(pending)
+            pending = []
+
+    if pending:  # partial final batch
+        _flush(pending)
 
     elapsed_time = time.time() - start_time
     _report_processing_speed(file_path, elapsed_time)
 
-    input_count = len(predictions[0])
+    # Concatenate batches and return in canonical order.
+    predictions = [np.concatenate(level_arrays[lv], axis=0) for lv in _CANONICAL_LEVELS]
     return predictions, [], input_count
 
 

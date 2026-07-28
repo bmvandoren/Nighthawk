@@ -17,7 +17,7 @@ def main():
         args.raven_output, args.audacity_output, args.duration_output,
         args.output_dir_path, args.ap_mask,
         args.tax_output, args.gzip_output, args.calibration,
-        args.quiet)
+        args.quiet, batch_size=args.batch_size)
 
 def _parse_args():
     
@@ -120,6 +120,14 @@ def _parse_args():
         type=Path,
         dest='output_dir_path',
         default=nh.DEFAULT_OUTPUT_DIR_PATH)
+
+    parser.add_argument(
+        '--batch-size',
+        help=(
+            f'number of 1-second windows to feed to the model per call. '
+            f'Larger values improve throughput on GPU and CPU. (default: {nh.DEFAULT_BATCH_SIZE})'),
+        type=int,
+        default=nh.DEFAULT_BATCH_SIZE)
 
     return parser.parse_args()
 

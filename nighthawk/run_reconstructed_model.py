@@ -819,7 +819,7 @@ def load_taxonomy(taxonomy_fp, group_map_fp):
     # load taxonomy
     taxonomy_df = pd.read_csv(taxonomy_fp)
     # remove parenthetical family stuff
-    taxonomy_df['family'] = taxonomy_df['family'].str.replace(' \(.*\)', '',regex=True)
+    taxonomy_df['family'] = taxonomy_df['family'].str.replace(r' \(.*\)', '', regex=True)
 
     # merge group list with taxonomy
     # taxonomy_df['group'] = [*map(groups_dict.get,taxonomy_df['code'])]

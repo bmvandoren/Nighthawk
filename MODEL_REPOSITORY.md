@@ -21,15 +21,24 @@ named models can coexist — e.g. `americas` and `europe` — each with their ow
 ### 1. Create the S3 bucket
 
 ```bash
-aws s3api create-bucket --bucket my-nighthawk-models --region us-east-1 \
-    --create-bucket-configuration LocationConstraint=us-east-1
+aws s3api create-bucket --bucket nighthawk-models --region us-east-1
 ```
 
 ### 2. Enable public-read access for downloads
 
-Create a bucket policy that allows anonymous GET on the model objects:
+Most AWS accounts have Block Public Access enabled by default, which rejects a public
+bucket policy. Disable it for this bucket first:
 
-```json
+```bash
+aws s3api put-public-access-block --bucket nighthawk-models \
+    --public-access-block-configuration \
+        BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
+```
+
+Then create a bucket policy that allows anonymous GET on the model objects:
+
+```bash
+cat > bucket-policy.json << 'EOF'
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -38,29 +47,20 @@ Create a bucket policy that allows anonymous GET on the model objects:
       "Effect": "Allow",
       "Principal": "*",
       "Action": ["s3:GetObject"],
-      "Resource": "arn:aws:s3:::my-nighthawk-models/*"
+      "Resource": "arn:aws:s3:::nighthawk-models/*"
     }
   ]
 }
-```
+EOF
 
-```bash
-aws s3api put-bucket-policy --bucket my-nighthawk-models \
+aws s3api put-bucket-policy --bucket nighthawk-models \
     --policy file://bucket-policy.json
-```
-
-If Block Public Access is enabled on the account, disable it for this bucket:
-
-```bash
-aws s3api put-public-access-block --bucket my-nighthawk-models \
-    --public-access-block-configuration \
-        BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
 ```
 
 ### 3. Expected object layout
 
 ```
-s3://my-nighthawk-models/
+s3://nighthawk-models/
   registry.json                                   ← global index (updated by publisher)
   models/
     americas/
@@ -83,7 +83,7 @@ cat > registry.json << 'EOF'
   "models": {}
 }
 EOF
-aws s3 cp registry.json s3://my-nighthawk-models/registry.json \
+aws s3 cp registry.json s3://nighthawk-models/registry.json \
     --content-type application/json
 ```
 
@@ -92,7 +92,7 @@ aws s3 cp registry.json s3://my-nighthawk-models/registry.json \
 Edit `Nighthawk-repo/nighthawk/detector.py` and set:
 
 ```python
-DEFAULT_MODEL_REPO_URL = 'https://my-nighthawk-models.s3.us-east-1.amazonaws.com/'
+DEFAULT_MODEL_REPO_URL = 'https://nighthawk-models.s3.us-east-1.amazonaws.com/'
 ```
 
 The URL must end with `/`.  This value is baked into the wheel so end users get it for free.
@@ -126,15 +126,15 @@ cd nighthawk-development
 
 python -m nh2.package_detector \
     --experiment-dir /home/vandoren/projects/nighthawk/experiments/classify-342-americas \
-    --out-dir /home/vandoren/projects/nighthawk/Nighthawk-repo/nighthawk \
+    --out-dir /home/vandoren/projects/nighthawk/experiments/classify-342-americas/package \
     --model-name americas \
-    --model-version 0.4.0 \
+    --model-version 0.2.0-342 \
     --export-name export_ema
 ```
 
 This writes the payload to `--out-dir` (for local testing) and creates:
-- `<out-dir>/../dist/americas-0.4.0.tar.gz` — the distributable tarball
-- `<out-dir>/../dist/americas-0.4.0.manifest.json` — sidecar metadata
+- `<out-dir>/../dist/americas-0.2.0-342.tar.gz` — the distributable tarball
+- `<out-dir>/../dist/americas-0.2.0-342.manifest.json` — sidecar metadata
 - `<out-dir>/manifest.json` — in-payload manifest (also baked into the tarball)
 
 The SHA-256 hash and size are printed for your records.
@@ -144,12 +144,13 @@ The SHA-256 hash and size are printed for your records.
 ```bash
 cd Nighthawk-repo
 
-# Test the assembled payload directly (using the committed tree as a local bundle)
-nighthawk playground/test_inputs/my_recording.wav \
-    --model-path nighthawk \
-    --threshold 70 --raven-output
+# Test the assembled payload directly from the experiment dir — no need to copy
+# it into the repo first
+nighthawk Nighthawk-repo/test_inputs/test1.wav \
+    --model-path /home/vandoren/projects/nighthawk/experiments/classify-342-americas/package \
+    --threshold 50 --raven-output
 
-# Should print "Using model americas@0.4.0 (source: local-dir)"
+# Should print "Using model americas@0.2.0-342 (source: local-dir)"
 ```
 
 ### Step 3: Publish to S3
@@ -157,20 +158,20 @@ nighthawk playground/test_inputs/my_recording.wav \
 ```bash
 python -m nh2.package_detector \
     --experiment-dir /home/vandoren/projects/nighthawk/experiments/classify-342-americas \
-    --out-dir /home/vandoren/projects/nighthawk/Nighthawk-repo/nighthawk \
+    --out-dir /home/vandoren/projects/nighthawk/experiments/classify-342-americas/package \
     --model-name americas \
-    --model-version 0.4.0 \
+    --model-version 0.2.0-342 \
     --export-name export_ema \
     --publish \
-    --repo-url https://my-nighthawk-models.s3.us-east-1.amazonaws.com/ \
-    --bucket my-nighthawk-models \
+    --repo-url https://nighthawk-models.s3.us-east-1.amazonaws.com/ \
+    --bucket nighthawk-models \
     --region us-east-1
 ```
 
 This:
 1. Uploads the tarball and sidecar manifest under `models/americas/`.
 2. Downloads `registry.json`, merges the new entry, re-uploads it.
-3. Sets `americas.latest = "0.4.0"` (suppress with `--no-set-latest`).
+3. Sets `americas.latest = "0.2.0-342"` (suppress with `--no-set-latest`).
 
 **`--force`**: required if you are re-publishing an existing `(name, version)`.  Without it,
 the script refuses to overwrite an already-published version (protects reproducibility).
@@ -189,9 +190,8 @@ Legacy models that are already assembled as a bundle tree (e.g. a previous
 
 ```
 <bundle-dir>/
-  saved_model_with_preprocessing/
-    saved_model.pb
-    variables/
+  saved_model.pb
+  variables/
   taxonomy/
     taxonomy_version.txt
     orders.txt
@@ -200,14 +200,13 @@ Legacy models that are already assembled as a bundle tree (e.g. a previous
     species.txt
     ebird_taxonomy.csv
     groups_ebird_codes.csv
-  test_config/
-    test_config.json
-    probability_calibrations_logistic_fromlogits.csv  ← logit-space calibrators required
-    test_set_performance/
-      taxon_summary_order.csv
-      taxon_summary_family.csv
-      taxon_summary_group.csv
-      taxon_summary_species.csv
+  test_config.json
+  probability_calibrations_logistic_fromlogits.csv  ← logit-space calibrators required
+  test_set_performance/
+    taxon_summary_order.csv
+    taxon_summary_family.csv
+    taxon_summary_group.csv
+    taxon_summary_species.csv
 ```
 
 **Note:** Legacy models must have `probability_calibrations_logistic_fromlogits.csv`
@@ -221,22 +220,23 @@ cd nighthawk-development
 # Build artifact only
 python -m nh2.package_detector \
     --legacy \
-    --bundle-dir /path/to/legacy/bundle \
-    --out-dir /home/vandoren/projects/nighthawk/Nighthawk-repo/nighthawk \
-    --model-name 300-americas \
-    --model-version 1.0.0
+    --bundle-dir /data/nighthawk/experiments/322-americas/final_model/packaged_model \
+    --out-dir /data/nighthawk/experiments/322-americas/final_model/package \
+    --model-name americas \
+    --model-version 0.1.0-322
 
 # Build + publish to S3
 python -m nh2.package_detector \
     --legacy \
-    --bundle-dir /path/to/legacy/bundle \
-    --out-dir /home/vandoren/projects/nighthawk/Nighthawk-repo/nighthawk \
-    --model-name 300-americas \
-    --model-version 1.0.0 \
+    --bundle-dir /data/nighthawk/experiments/322-americas/final_model/packaged_model \
+    --out-dir /data/nighthawk/experiments/322-americas/final_model/package \
+    --model-name americas \
+    --model-version 0.1.0-322 \
     --publish \
-    --repo-url https://my-nighthawk-models.s3.us-east-1.amazonaws.com/ \
-    --bucket my-nighthawk-models \
-    --region us-east-1
+    --repo-url https://nighthawk-models.s3.us-east-1.amazonaws.com/ \
+    --bucket nighthawk-models \
+    --region us-east-1 \
+    --no-set-latest
 ```
 
 The resulting `manifest.json` records `"model_type": "legacy"`, which tells the

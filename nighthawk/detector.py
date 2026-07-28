@@ -34,7 +34,7 @@ DEFAULT_BATCH_SIZE = 64           # windows per model call
 # Model repository settings.
 DEFAULT_MODEL_NAME = 'americas'
 DEFAULT_MODEL_VERSION = 'latest'   # tracks the newest published version
-DEFAULT_MODEL_REPO_URL = ''        # filled in once the S3 bucket is created
+DEFAULT_MODEL_REPO_URL = 'https://nighthawk-models.s3.us-east-1.amazonaws.com/'
 
 # Canonical output level order matching nh2 model heads.
 _CANONICAL_LEVELS = ['order', 'family', 'group', 'species']

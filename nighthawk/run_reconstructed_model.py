@@ -115,7 +115,7 @@ def process_overlapping_detections(df,combine_type,
 
         df_split['tmp'] = range(df_split.shape[0])
         df_split = df_split.groupby('tmp', group_keys=False).apply(split_long_detections_helper,max_duration=max_duration)
-        df_split = df_split.drop('tmp',axis=1)
+        df_split = df_split.drop('tmp', axis=1, errors='ignore')  # pandas 3: key not in output
         df_split = df_split.reset_index(drop=True)
 
         df_out = pd.concat([df_keep,df_split])

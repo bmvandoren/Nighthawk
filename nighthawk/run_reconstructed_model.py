@@ -1019,6 +1019,26 @@ def load_taxonomy(taxonomy_fp, group_map_fp):
         family_order_map)
 
 
+def suppress_redundant_higher_level_detections(
+        merged_df,
+        family_order_map,
+        group_family_map,
+        species_group_map,
+        species_family_map):
+    """Drop higher-level rows when a finer taxon in the same lineage overlaps in time.
+
+    Operates on post-processed ``merged_df`` rows (one finest-resolution
+    ``predicted_category`` per row). When a species detection overlaps a family
+    detection and that species belongs to that family, keep the species row and
+    remove the family row. The same logic applies up the hierarchy (group
+    suppresses family/order, etc.).
+
+    Time overlap and lineage matching rules are not yet implemented.
+    """
+
+    raise NotImplementedError
+
+
 def postprocess(
         detect_df_dict, clip_length_sec, stride_sec, family_order_map,
         group_family_map, species_group_map, species_family_map, quiet,

@@ -30,13 +30,13 @@ DEFAULT_DO_CALIBRATION = True
 DEFAULT_QUIET = False
 DEFAULT_BATCH_SIZE = 64           # windows per model call
 
+# Model repository settings.
+DEFAULT_MODEL_NAME = 'americas'
+DEFAULT_MODEL_VERSION = 'latest'   # tracks the newest published version
+DEFAULT_MODEL_REPO_URL = ''        # filled in once the S3 bucket is created
+
 # Canonical output level order matching nh2 model heads.
 _CANONICAL_LEVELS = ['order', 'family', 'group', 'species']
-
-_PACKAGE_DIR_PATH = Path(__file__).parent
-_MODEL_DIR_PATH = _PACKAGE_DIR_PATH / 'saved_model_with_preprocessing'
-_TAXONOMY_DIR_PATH = _PACKAGE_DIR_PATH / 'taxonomy'
-_CONFIG_DIR_PATH = _PACKAGE_DIR_PATH / 'test_config'
 
 
 def run_detector_on_files(
@@ -52,19 +52,43 @@ def run_detector_on_files(
         gzip_output=DEFAULT_GZIP_OUTPUT,
         do_calibration=DEFAULT_DO_CALIBRATION,
         quiet=DEFAULT_QUIET,
-        batch_size=DEFAULT_BATCH_SIZE):
-    
+        batch_size=DEFAULT_BATCH_SIZE,
+        model_name=DEFAULT_MODEL_NAME,
+        model_version=DEFAULT_MODEL_VERSION,
+        model_path=None,
+        model_repo_url=DEFAULT_MODEL_REPO_URL,
+        cache_dir=None,
+        offline=False):
+
     input_file_paths = _expand_paths(input_file_paths)
     file_count = len(input_file_paths)
     if file_count == 0:
         print('No input files found.')
         return
 
+    print('Resolving detector model...')
+    from nighthawk.model_manager import resolve_model, NighthawkModelError
+    try:
+        resolved = resolve_model(
+            name=model_name,
+            version=model_version,
+            model_path=model_path,
+            repo_url=model_repo_url or None,
+            cache_dir=cache_dir,
+            offline=offline,
+        )
+    except NighthawkModelError as e:
+        print(f'Error: {e}')
+        return
+    if not quiet:
+        print(f'Using model {resolved.name}@{resolved.version} '
+              f'(source: {resolved.source})')
+
     print('Loading detector model...')
-    model = _load_model()
+    model = _load_model(resolved.saved_model_dir)
 
     print('Getting detector configuration file paths...')
-    config_file_paths = _get_configuration_file_paths()
+    config_file_paths = _get_configuration_file_paths(resolved)
 
     for i, input_file_path in enumerate(input_file_paths):
 
@@ -135,34 +159,36 @@ def _expand_paths(paths):
     return expanded_paths
     
 
-def _load_model():
+def _load_model(saved_model_dir):
 
-    # This is here instead of near the top of this file since it is
-    # rather slow. Putting it here makes the script more responsive
-    # if, say, the user just wants to display help or accidentally
-    # specifies an invalid argument.
+    # TF is imported here (not at module level) since it is slow to load.
+    # This keeps the script responsive if the user just wants --help or
+    # accidentally specifies an invalid argument.
     import tensorflow as tf
 
-    return tf.saved_model.load(_MODEL_DIR_PATH)
+    return tf.saved_model.load(str(saved_model_dir))
 
 
-def _get_configuration_file_paths():
+def _get_configuration_file_paths(resolved):
+    """Build a _Bunch of config file paths from a ResolvedModel.
 
+    Attribute names are preserved exactly so _run_detector_on_file and
+    run_reconstructed_model.run_model_on_file remain untouched.
+    """
     paths = _Bunch()
 
-    taxonomy = _TAXONOMY_DIR_PATH
-    paths.species =  taxonomy / 'species.txt'
-    paths.groups =  taxonomy / 'groups.txt'
-    paths.families =  taxonomy / 'families.txt'
-    paths.orders =  taxonomy / 'orders.txt'
-    paths.ebird_taxonomy = taxonomy / 'ebird_taxonomy.csv'
-    paths.group_ebird_codes = taxonomy / 'groups_ebird_codes.csv'
-    paths.ibp_codes = taxonomy / 'IBP-AOS-LIST21.csv'
- 
-    config = _CONFIG_DIR_PATH
-    paths.config = config / 'test_config.json'
-    paths.test_set_performance = config / 'test_set_performance'
-    paths.calibrators_from_logits = config / 'probability_calibrations_logistic_fromlogits.csv'
+    tax = resolved.taxonomy
+    paths.species           = tax['species']
+    paths.groups            = tax['groups']
+    paths.families          = tax['families']
+    paths.orders            = tax['orders']
+    paths.ebird_taxonomy    = tax['ebird_taxonomy']
+    paths.group_ebird_codes = tax['group_ebird_codes']
+
+    tc = resolved.test_config
+    paths.config                  = tc['config']
+    paths.test_set_performance    = tc['test_set_performance']
+    paths.calibrators_from_logits = tc['calibrators_from_logits']
 
     return paths
 

@@ -14,7 +14,17 @@ from .detector import (
     DEFAULT_DO_CALIBRATION,
     DEFAULT_QUIET,
     DEFAULT_BATCH_SIZE,
+    DEFAULT_MODEL_NAME,
+    DEFAULT_MODEL_VERSION,
+    DEFAULT_MODEL_REPO_URL,
     MODEL_INPUT_DURATION,
     MODEL_SAMPLE_RATE,
-    run_detector_on_files
+    run_detector_on_files,
+)
+from .model_manager import (
+    resolve_model,
+    ResolvedModel,
+    list_cached_models,
+    remove_cached_model,
+    NighthawkModelError,
 )

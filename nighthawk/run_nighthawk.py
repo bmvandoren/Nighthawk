@@ -17,7 +17,13 @@ def main():
         args.raven_output, args.audacity_output, args.duration_output,
         args.output_dir_path, args.ap_mask,
         args.tax_output, args.gzip_output, args.calibration,
-        args.quiet, batch_size=args.batch_size)
+        args.quiet, batch_size=args.batch_size,
+        model_name=args.model,
+        model_version=args.model_version,
+        model_path=args.model_path,
+        model_repo_url=args.model_repo_url,
+        cache_dir=args.cache_dir,
+        offline=args.offline)
 
 def _parse_args():
     
@@ -128,6 +134,60 @@ def _parse_args():
             f'Larger values improve throughput on GPU and CPU. (default: {nh.DEFAULT_BATCH_SIZE})'),
         type=int,
         default=nh.DEFAULT_BATCH_SIZE)
+
+    parser.add_argument(
+        '--model',
+        help=(
+            f'name of the model to use (e.g. "americas", "europe"). '
+            f'(default: {nh.DEFAULT_MODEL_NAME})'),
+        dest='model',
+        default=nh.DEFAULT_MODEL_NAME)
+
+    parser.add_argument(
+        '--model-version',
+        help=(
+            f'version of the model to use, or "latest" to auto-select the '
+            f'newest published version. Pin a version (e.g. "0.4.0") for '
+            f'reproducible results. (default: {nh.DEFAULT_MODEL_VERSION})'),
+        dest='model_version',
+        default=nh.DEFAULT_MODEL_VERSION)
+
+    parser.add_argument(
+        '--model-path',
+        help=(
+            'path to a local model bundle directory or .tar.gz tarball. '
+            'When given, no network access is performed and --model / '
+            '--model-version are used only for display/validation.'),
+        dest='model_path',
+        type=Path,
+        default=None)
+
+    parser.add_argument(
+        '--model-repo-url',
+        help=(
+            'base URL of the model repository '
+            f'(default: {nh.DEFAULT_MODEL_REPO_URL!r}).'),
+        dest='model_repo_url',
+        default=nh.DEFAULT_MODEL_REPO_URL)
+
+    parser.add_argument(
+        '--cache-dir',
+        help=(
+            'directory used to cache downloaded models. '
+            'Defaults to the platform user cache dir (e.g. ~/.cache/nighthawk). '
+            'Override with env NIGHTHAWK_CACHE_DIR.'),
+        dest='cache_dir',
+        type=Path,
+        default=None)
+
+    parser.add_argument(
+        '--offline',
+        help=(
+            'disable all network access. Serves models from the local cache; '
+            'raises an error if the requested model is not cached. '
+            'Also controlled via env NIGHTHAWK_OFFLINE=1.'),
+        action=BooleanOptionalAction,
+        default=False)
 
     return parser.parse_args()
 

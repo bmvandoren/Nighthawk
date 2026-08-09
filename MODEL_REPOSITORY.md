@@ -223,7 +223,8 @@ python -m nh2.package_detector \
     --bundle-dir /data/nighthawk/experiments/322-americas/final_model/packaged_model \
     --out-dir /data/nighthawk/experiments/322-americas/final_model/package \
     --model-name americas \
-    --model-version 0.1.0-322
+    --model-version 0.1.0-322 \
+    --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv
 
 # Build + publish to S3
 python -m nh2.package_detector \
@@ -232,6 +233,7 @@ python -m nh2.package_detector \
     --out-dir /data/nighthawk/experiments/322-americas/final_model/package \
     --model-name americas \
     --model-version 0.1.0-322 \
+    --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv \    
     --publish \
     --repo-url https://nighthawk-models.s3.us-east-1.amazonaws.com/ \
     --bucket nighthawk-models \
@@ -386,17 +388,23 @@ private bucket — no public-read bucket policy required.
 
 ```bash
 nighthawk my_recording.wav \
-    --model-repo-url s3://my-private-bucket/nighthawk/ \
+    --model-repo-url s3://my-private-bucket/ \
     --threshold 50 --raven-output
 
 # Pre-download without running detection
 nighthawk-models fetch americas \
-    --repo-url s3://my-private-bucket/nighthawk/
+    --repo-url s3://my-private-bucket/
 
 # List remote versions
 nighthawk-models list --remote \
-    --repo-url s3://my-private-bucket/nighthawk/
+    --repo-url s3://my-private-bucket/
 ```
+
+**Important:** `--model-repo-url` / `--repo-url` must be the **bucket root**
+(`s3://bucket/`), not a prefixed path.  `registry.json` is always stored at the
+bucket root by the publisher.  The `--s3-prefix` used at publish time (e.g.
+`models/`) is baked into each registry entry's `url` field, so the client
+resolves the full object path automatically.
 
 The expected bucket layout is identical to the public HTTPS layout (see
 [S3 repository setup](#s3-repository-setup-one-time) above).  The SHA-256

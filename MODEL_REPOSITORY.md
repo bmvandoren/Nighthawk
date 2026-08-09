@@ -400,11 +400,11 @@ nighthawk-models list --remote \
     --repo-url s3://my-private-bucket/
 ```
 
-**Important:** `--model-repo-url` / `--repo-url` must be the **bucket root**
-(`s3://bucket/`), not a prefixed path.  `registry.json` is always stored at the
-bucket root by the publisher.  The `--s3-prefix` used at publish time (e.g.
-`models/`) is baked into each registry entry's `url` field, so the client
-resolves the full object path automatically.
+**Important:** `--model-repo-url` / `--repo-url` is the root of the repository —
+`registry.json` lives there and all model URLs in the registry are relative to it.
+For a private bucket you can put the repo at any prefix (e.g. `s3://bucket/myrepo/`);
+the `--s3-prefix` passed at publish time must start with that same prefix
+(e.g. `--s3-prefix myrepo/` or `--s3-prefix myrepo/models/`).
 
 The expected bucket layout is identical to the public HTTPS layout (see
 [S3 repository setup](#s3-repository-setup-one-time) above).  The SHA-256

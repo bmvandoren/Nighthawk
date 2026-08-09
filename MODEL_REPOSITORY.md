@@ -339,9 +339,69 @@ nighthawk my_recording.wav
 
 ### Change the model repository URL
 
+The `--model-repo-url` flag (and the `--repo-url` flag in `nighthawk-models`) accepts
+either a public `https://` URL or a **private** `s3://bucket/prefix/` URI.
+
 ```bash
+# Public HTTPS repository (default)
 nighthawk my_recording.wav --model-repo-url https://my-other-bucket.s3.amazonaws.com/
+
+# Private S3 bucket via boto3 (see below)
+nighthawk my_recording.wav --model-repo-url s3://my-private-bucket/nighthawk/
 ```
+
+### Using a private S3 repository (`s3://`)
+
+When the repo URL begins with `s3://`, the client fetches the registry and model
+tarballs using **boto3** instead of plain HTTP.  This lets you host models in a
+private bucket — no public-read bucket policy required.
+
+**Prerequisites:**
+
+1. Install boto3 (not included in the base nighthawk install):
+
+   ```bash
+   pip install 'nighthawk[s3]'
+   ```
+
+2. Configure AWS credentials — any of the standard boto3 methods work:
+
+   ```bash
+   # Option A: environment variables
+   export AWS_ACCESS_KEY_ID=...
+   export AWS_SECRET_ACCESS_KEY=...
+   export AWS_DEFAULT_REGION=us-east-1  # optional
+
+   # Option B: named profile
+   export AWS_PROFILE=my-profile
+
+   # Option C: ~/.aws/credentials + ~/.aws/config (aws configure)
+   ```
+
+3. Ensure the IAM principal has `s3:GetObject` on the bucket objects (and
+   `s3:GetObject` on `registry.json` specifically).  No public-read bucket policy
+   is needed.
+
+**Usage:**
+
+```bash
+nighthawk my_recording.wav \
+    --model-repo-url s3://my-private-bucket/nighthawk/ \
+    --threshold 50 --raven-output
+
+# Pre-download without running detection
+nighthawk-models fetch americas \
+    --repo-url s3://my-private-bucket/nighthawk/
+
+# List remote versions
+nighthawk-models list --remote \
+    --repo-url s3://my-private-bucket/nighthawk/
+```
+
+The expected bucket layout is identical to the public HTTPS layout (see
+[S3 repository setup](#s3-repository-setup-one-time) above).  The SHA-256
+checksum verification and safe-extraction guarantees described in the
+[Security](#security) section apply equally to S3 downloads.
 
 ---
 

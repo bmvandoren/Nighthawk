@@ -228,19 +228,22 @@ def fetch_registry(repo_url: str) -> dict:
 
 
 def _fetch_registry(repo_url: str) -> dict:
-    base = repo_url if repo_url.endswith("/") else repo_url + "/"
-    url = urllib.parse.urljoin(base, "registry.json")
-    try:
-        with urllib.request.urlopen(url, timeout=15) as resp:
-            raw = resp.read()
-    except urllib.error.HTTPError as e:
-        raise RegistryError(
-            f"Failed to fetch registry from {url}: HTTP {e.code} {e.reason}"
-        ) from e
-    except urllib.error.URLError as e:
-        raise RegistryError(
-            f"Failed to fetch registry from {url}: {e.reason}"
-        ) from e
+    url = _repo_join(repo_url, "registry.json")
+    if _is_s3_url(repo_url):
+        # _s3_get_bytes maps boto/botocore errors to RegistryError already.
+        raw = _s3_get_bytes(url)
+    else:
+        try:
+            with urllib.request.urlopen(url, timeout=15) as resp:
+                raw = resp.read()
+        except urllib.error.HTTPError as e:
+            raise RegistryError(
+                f"Failed to fetch registry from {url}: HTTP {e.code} {e.reason}"
+            ) from e
+        except urllib.error.URLError as e:
+            raise RegistryError(
+                f"Failed to fetch registry from {url}: {e.reason}"
+            ) from e
     try:
         registry = json.loads(raw)
     except json.JSONDecodeError as e:
@@ -409,6 +412,125 @@ def remove_cached_model(
 
 
 # ---------------------------------------------------------------------------
+# S3 helpers (used only when repo_url has the s3:// scheme)
+# ---------------------------------------------------------------------------
+
+def _is_s3_url(url: str) -> bool:
+    """Return True if *url* uses the ``s3://`` scheme."""
+    return urllib.parse.urlparse(url).scheme == "s3"
+
+
+def _parse_s3_url(url: str) -> tuple[str, str]:
+    """Parse an ``s3://bucket/prefix/`` URL into ``(bucket, key)``.
+
+    When *url* is a repository base (e.g. ``s3://bucket/prefix/``), the
+    returned key ends with ``'/'`` so that it concatenates cleanly with a
+    relative object path.  When *url* is a full object URI (e.g.
+    ``s3://bucket/prefix/registry.json``), the key is the bare S3 object key.
+
+    Raises :exc:`ModelResolutionError` if the bucket name is missing.
+    """
+    parsed = urllib.parse.urlparse(url)
+    bucket = parsed.netloc
+    if not bucket:
+        raise ModelResolutionError(
+            f"Invalid S3 URL (missing bucket name): {url!r}"
+        )
+    raw = parsed.path.lstrip("/")
+    # Preserve a trailing slash that was present in the original URL so that
+    # prefix URLs (repo bases) remain normalized and can be joined correctly.
+    if parsed.path.endswith("/") and raw and not raw.endswith("/"):
+        raw += "/"
+    return bucket, raw
+
+
+def _repo_join(repo_url: str, relative: str) -> str:
+    """Scheme-aware join of a repository base URL with a relative object path.
+
+    For ``s3://`` URLs returns ``s3://{bucket}/{prefix}{relative.lstrip('/')}``.
+    For ``http``/``https`` returns the same result as :func:`urllib.parse.urljoin`.
+    """
+    if _is_s3_url(repo_url):
+        bucket, prefix = _parse_s3_url(repo_url)
+        return f"s3://{bucket}/{prefix}{relative.lstrip('/')}"
+    base = repo_url if repo_url.endswith("/") else repo_url + "/"
+    return urllib.parse.urljoin(base, relative)
+
+
+def _s3_client():
+    """Return a boto3 S3 client using the default credential chain.
+
+    Raises :exc:`NighthawkModelError` (not ``ImportError``) when boto3 is not
+    installed, so callers can catch :exc:`NighthawkModelError` uniformly.
+    """
+    try:
+        import boto3  # noqa: PLC0415
+    except ImportError as exc:
+        raise NighthawkModelError(
+            "s3:// model repositories require boto3. "
+            "Install it with: pip install 'nighthawk[s3]'"
+        ) from exc
+    return boto3.client("s3")
+
+
+def _s3_get_bytes(uri: str) -> bytes:
+    """Fetch an S3 object and return its raw bytes.
+
+    Maps ``botocore`` credential/client errors to :exc:`RegistryError` so
+    callers get a consistent exception type regardless of transport.
+    """
+    bucket, key = _parse_s3_url(uri)
+    client = _s3_client()
+    try:
+        resp = client.get_object(Bucket=bucket, Key=key)
+        return resp["Body"].read()
+    except Exception as exc:
+        _raise_s3_error_as(exc, uri, RegistryError)
+
+
+def _s3_download(uri: str, dest: Path) -> None:
+    """Stream an S3 object to a local file.
+
+    Maps ``botocore`` errors to :exc:`ModelResolutionError`.
+    """
+    bucket, key = _parse_s3_url(uri)
+    client = _s3_client()
+    try:
+        client.download_file(Bucket=bucket, Key=key, Filename=str(dest))
+    except Exception as exc:
+        _raise_s3_error_as(exc, uri, ModelResolutionError)
+
+
+def _raise_s3_error_as(exc: Exception, uri: str, error_cls) -> None:
+    """Translate a botocore exception into a Nighthawk error type and raise it.
+
+    *error_cls* must be one of the Nighthawk exception classes
+    (:exc:`RegistryError` or :exc:`ModelResolutionError`).  This helper is
+    called only from the except-blocks of the S3 get/download functions so
+    that the original traceback is always chained.
+    """
+    try:
+        from botocore.exceptions import ClientError, NoCredentialsError
+    except ImportError:
+        # botocore not available — report generically.
+        raise error_cls(f"Failed to access S3 object {uri}: {exc}") from exc
+
+    if isinstance(exc, NoCredentialsError):
+        raise error_cls(
+            f"No AWS credentials found for {uri}. "
+            "Configure credentials via ~/.aws/credentials or the "
+            "AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY environment variables."
+        ) from exc
+    if isinstance(exc, ClientError):
+        code = exc.response.get("Error", {}).get("Code", "?")
+        msg = exc.response.get("Error", {}).get("Message", str(exc))
+        raise error_cls(
+            f"S3 error accessing {uri}: {code} — {msg}"
+        ) from exc
+    raise error_cls(f"Failed to access S3 object {uri}: {exc}") from exc
+
+
+# ---------------------------------------------------------------------------
 # Download + extract
 # ---------------------------------------------------------------------------
 
@@ -426,8 +548,7 @@ def _download_and_cache(
 
     Returns the final cache directory path.
     """
-    base = repo_url if repo_url.endswith("/") else repo_url + "/"
-    tar_url = urllib.parse.urljoin(base, entry["url"])
+    tar_url = _repo_join(repo_url, entry["url"])
     expected_sha = entry.get("sha256")
 
     tmp_dir = cache_root / "tmp"
@@ -438,7 +559,10 @@ def _download_and_cache(
 
     try:
         print(f"[nighthawk] Downloading {name}@{version} from {tar_url} ...")
-        _stream_download(tar_url, tmp_tar)
+        if _is_s3_url(tar_url):
+            _s3_download(tar_url, tmp_tar)
+        else:
+            _stream_download(tar_url, tmp_tar)
 
         if expected_sha:
             print("[nighthawk] Verifying checksum...")

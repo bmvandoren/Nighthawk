@@ -98,6 +98,9 @@ dependencies = [
     'tensorflow~=2.21.0;platform_system != "Linux"',
 ]
 
+[project.optional-dependencies]
+s3 = ['boto3>=1.26']
+
 [project.urls]
 'Bug Tracker' = 'https://github.com/bmvandoren/nighthawk/issues'
 'Source Code' = 'https://github.com/bmvandoren/nighthawk'

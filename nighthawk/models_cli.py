@@ -31,7 +31,10 @@ def main():
         help='Also fetch the registry and list available remote versions.')
     p_list.add_argument(
         '--repo-url', default=nh.DEFAULT_MODEL_REPO_URL, dest='repo_url',
-        help=f'Model repository base URL. (default: {nh.DEFAULT_MODEL_REPO_URL!r})')
+        help=(
+            f'Model repository base URL. (default: {nh.DEFAULT_MODEL_REPO_URL!r}) '
+            'Accepts https:// or s3://bucket/prefix/ URIs. '
+            "s3:// requires pip install 'nighthawk[s3]' and AWS credentials."))
     p_list.add_argument(
         '--cache-dir', type=Path, default=None, dest='cache_dir',
         help='Override the local cache directory.')
@@ -46,7 +49,10 @@ def main():
         help='Version to fetch, or "latest". (default: latest)')
     p_fetch.add_argument(
         '--repo-url', default=nh.DEFAULT_MODEL_REPO_URL, dest='repo_url',
-        help='Model repository base URL.')
+        help=(
+            'Model repository base URL. '
+            'Accepts https:// or s3://bucket/prefix/ URIs. '
+            "s3:// requires pip install 'nighthawk[s3]' and AWS credentials."))
     p_fetch.add_argument(
         '--cache-dir', type=Path, default=None, dest='cache_dir',
         help='Override the local cache directory.')

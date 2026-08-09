@@ -19,14 +19,19 @@ from nighthawk.model_manager import (
     ModelResolutionError,
     NighthawkModelError,
     OfflineError,
+    RegistryError,
     ResolvedModel,
     UnsafeArchiveError,
     _cache_root,
     _cached_bundle_path,
     _is_ready,
+    _is_s3_url,
     _load_bundle,
     _newest_cached_version,
+    _parse_s3_url,
+    _repo_join,
     _resolve_version,
+    _s3_client,
     _safe_extract,
     _sha256_file,
     _verify_sha256,
@@ -483,3 +488,232 @@ def test_load_bundle_manifest_less_model_type_defaults_nh2(tmp_path):
     # resolved.manifest is empty dict for manifest-less bundles.
     model_type = (resolved.manifest or {}).get("model_type", "nh2")
     assert model_type == "nh2"
+
+
+# ---------------------------------------------------------------------------
+# S3 helpers — _is_s3_url, _parse_s3_url, _repo_join
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("url,expected", [
+    ("s3://bucket/prefix/", True),
+    ("s3://bucket", True),
+    ("https://bucket.s3.amazonaws.com/", False),
+    ("http://example.com/registry.json", False),
+    ("", False),
+])
+def test_is_s3_url(url, expected):
+    assert _is_s3_url(url) == expected
+
+
+@pytest.mark.parametrize("url,bucket,key", [
+    ("s3://mybucket/prefix/", "mybucket", "prefix/"),
+    ("s3://mybucket/deep/prefix/", "mybucket", "deep/prefix/"),
+    ("s3://mybucket/prefix/registry.json", "mybucket", "prefix/registry.json"),
+    ("s3://mybucket", "mybucket", ""),
+    ("s3://mybucket/", "mybucket", ""),
+])
+def test_parse_s3_url_valid(url, bucket, key):
+    b, k = _parse_s3_url(url)
+    assert b == bucket
+    assert k == key
+
+
+def test_parse_s3_url_missing_bucket():
+    with pytest.raises(ModelResolutionError, match="missing bucket"):
+        _parse_s3_url("s3:///prefix/")
+
+
+@pytest.mark.parametrize("repo_url,relative,expected", [
+    # S3 with prefix
+    ("s3://bucket/prefix/", "registry.json", "s3://bucket/prefix/registry.json"),
+    ("s3://bucket/prefix/", "models/americas/americas-0.4.0.tar.gz",
+     "s3://bucket/prefix/models/americas/americas-0.4.0.tar.gz"),
+    # S3 no prefix
+    ("s3://bucket", "registry.json", "s3://bucket/registry.json"),
+    ("s3://bucket/", "registry.json", "s3://bucket/registry.json"),
+    # HTTPS — matches existing urllib.parse.urljoin behaviour
+    ("https://example.s3.amazonaws.com/", "registry.json",
+     "https://example.s3.amazonaws.com/registry.json"),
+    ("https://example.s3.amazonaws.com/", "models/americas/americas-0.4.0.tar.gz",
+     "https://example.s3.amazonaws.com/models/americas/americas-0.4.0.tar.gz"),
+])
+def test_repo_join(repo_url, relative, expected):
+    assert _repo_join(repo_url, relative) == expected
+
+
+# ---------------------------------------------------------------------------
+# _s3_client — missing boto3 produces NighthawkModelError
+# ---------------------------------------------------------------------------
+
+def test_s3_client_missing_boto3(monkeypatch):
+    """When boto3 is absent the error message suggests the install command."""
+    import builtins
+    real_import = builtins.__import__
+
+    def _block_boto3(name, *args, **kwargs):
+        if name == "boto3":
+            raise ImportError("no module named boto3")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", _block_boto3)
+    with pytest.raises(NighthawkModelError, match="pip install 'nighthawk\\[s3\\]'"):
+        _s3_client()
+
+
+# ---------------------------------------------------------------------------
+# _fetch_registry over S3 — monkeypatched boto3 client
+# ---------------------------------------------------------------------------
+
+def _fake_s3_client_for_registry(registry_bytes: bytes):
+    """Return a minimal fake boto3 S3 client that serves registry_bytes."""
+    import io
+
+    class _FakeBody:
+        def read(self):
+            return registry_bytes
+
+    class _FakeS3Client:
+        def get_object(self, Bucket, Key):
+            return {"Body": _FakeBody()}
+
+    return _FakeS3Client()
+
+
+def test_fetch_registry_s3_success(monkeypatch, tmp_path):
+    """_fetch_registry fetches and parses registry.json from S3."""
+    import nighthawk.model_manager as mm
+
+    registry = _make_registry()
+    registry_bytes = json.dumps(registry).encode()
+    fake_client = _fake_s3_client_for_registry(registry_bytes)
+    monkeypatch.setattr(mm, "_s3_client", lambda: fake_client)
+
+    result = mm._fetch_registry("s3://my-bucket/nighthawk/")
+    assert result["schema_version"] == 1
+    assert "americas" in result["models"]
+
+
+def test_fetch_registry_s3_client_error(monkeypatch):
+    """A botocore ClientError from the S3 fetch is mapped to RegistryError."""
+    import nighthawk.model_manager as mm
+
+    try:
+        from botocore.exceptions import ClientError
+    except ImportError:
+        pytest.skip("botocore not installed")
+
+    class _ErrorClient:
+        def get_object(self, Bucket, Key):
+            raise ClientError(
+                {"Error": {"Code": "NoSuchKey", "Message": "Not found"}},
+                "GetObject",
+            )
+
+    monkeypatch.setattr(mm, "_s3_client", lambda: _ErrorClient())
+    with pytest.raises(RegistryError, match="NoSuchKey"):
+        mm._fetch_registry("s3://my-bucket/nighthawk/")
+
+
+def test_fetch_registry_s3_no_credentials_error(monkeypatch):
+    """A botocore NoCredentialsError is mapped to RegistryError with a hint."""
+    import nighthawk.model_manager as mm
+
+    try:
+        from botocore.exceptions import NoCredentialsError
+    except ImportError:
+        pytest.skip("botocore not installed")
+
+    class _NoCreds:
+        def get_object(self, Bucket, Key):
+            raise NoCredentialsError()
+
+    monkeypatch.setattr(mm, "_s3_client", lambda: _NoCreds())
+    with pytest.raises(RegistryError, match="No AWS credentials"):
+        mm._fetch_registry("s3://my-bucket/nighthawk/")
+
+
+# ---------------------------------------------------------------------------
+# resolve_model over S3 — end-to-end with monkeypatched boto3 client
+# ---------------------------------------------------------------------------
+
+def test_resolve_model_s3_download(tmp_path, monkeypatch):
+    """resolve_model downloads + caches a bundle via S3 when repo_url is s3://."""
+    import shutil
+    import nighthawk.model_manager as mm
+
+    # Build a real tarball from the fixture bundle; _make_tarball returns the
+    # sha256 so we can put it in the registry and pass checksum verification.
+    bundle = _make_bundle_dir(tmp_path / "src")
+    tar_path = tmp_path / "americas-0.4.0.tar.gz"
+    actual_sha = _make_tarball(bundle, tar_path)
+    registry = _make_registry()
+    registry["models"]["americas"]["versions"]["0.4.0"]["sha256"] = actual_sha
+    registry_bytes = json.dumps(registry).encode()
+    tar_bytes = tar_path.read_bytes()
+
+    # Fake S3 client: serves registry.json and the tarball.
+    class _FakeS3Client:
+        def get_object(self, Bucket, Key):
+            import io
+            if Key.endswith("registry.json"):
+                data = registry_bytes
+            else:
+                data = tar_bytes
+
+            class _Body:
+                def read(self):
+                    return data
+
+            return {"Body": _Body()}
+
+        def download_file(self, Bucket, Key, Filename):
+            # Simulate boto3 download_file by writing the tarball to Filename.
+            import shutil as _shutil
+            with open(Filename, "wb") as fh:
+                fh.write(tar_bytes)
+
+    monkeypatch.setattr(mm, "_s3_client", lambda: _FakeS3Client())
+
+    cache = tmp_path / "cache"
+    resolved = resolve_model(
+        name="americas",
+        version="0.4.0",
+        repo_url="s3://my-bucket/nighthawk/",
+        cache_dir=cache,
+    )
+    assert resolved.source == "download"
+    assert resolved.name == "americas"
+    assert resolved.version == "0.4.0"
+    # Should be cached now.
+    assert _is_ready(_cached_bundle_path(cache, "americas", "0.4.0"))
+
+
+def test_resolve_model_s3_cache_hit_skips_boto(tmp_path, monkeypatch):
+    """A cached S3 model is served from disk — boto3 must not be called."""
+    import shutil
+    import nighthawk.model_manager as mm
+
+    # Populate the cache.
+    bundle = _make_bundle_dir(tmp_path / "src")
+    cache = tmp_path / "cache"
+    final = cache / "models" / "americas" / "0.4.0"
+    final.mkdir(parents=True)
+    for item in bundle.iterdir():
+        if item.is_dir():
+            shutil.copytree(item, final / item.name)
+        else:
+            shutil.copy2(item, final / item.name)
+    (final / ".ready").write_text("ok")
+
+    def _must_not_call():
+        raise AssertionError("_s3_client must not be called for a cache hit")
+
+    monkeypatch.setattr(mm, "_s3_client", _must_not_call)
+
+    resolved = resolve_model(
+        name="americas",
+        version="0.4.0",
+        repo_url="s3://my-bucket/nighthawk/",
+        cache_dir=cache,
+    )
+    assert resolved.source == "cache"

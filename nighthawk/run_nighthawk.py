@@ -171,7 +171,11 @@ def _parse_args():
         '--model-repo-url',
         help=(
             'base URL of the model repository '
-            f'(default: {nh.DEFAULT_MODEL_REPO_URL!r}).'),
+            f'(default: {nh.DEFAULT_MODEL_REPO_URL!r}). '
+            'May be a public https:// URL or a private s3://bucket/prefix/ URI. '
+            's3:// URLs use boto3 with your ambient AWS credentials '
+            "(~/.aws/ or AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY) and require "
+            "pip install 'nighthawk[s3]'."),
         dest='model_repo_url',
         default=nh.DEFAULT_MODEL_REPO_URL)
 

@@ -1,13 +1,10 @@
-from pathlib import Path
+import argparse
 import gc
 import time
 
 import numpy as np
 import tensorflow as tf
 
-
-PACKAGE_DIR_PATH = Path(__file__).parent
-MODEL_DIR_PATH = PACKAGE_DIR_PATH / 'saved_model_with_preprocessing'
 
 RECORDING_DURATION = 36000
 HOP_DURATION = .2
@@ -20,9 +17,16 @@ CHUNK_RECORD_COUNT = int(round(CHUNK_DURATION / HOP_DURATION))
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description='Nighthawk model throughput benchmark.')
+    parser.add_argument(
+        '--model-path', default=None,
+        help='Path to a local model bundle directory or tarball. '
+             'Omit to use the default model (auto-downloaded if needed).')
+    args = parser.parse_args()
 
     print('Initializing...')
-    model = load_model()
+    model = load_model(args.model_path)
     samples = get_samples()
 
     time_processing(apply_model_and_retain_results, model, samples)
@@ -30,8 +34,10 @@ def main():
     # time_processing(apply_model_and_discard_results, model, samples)
 
 
-def load_model():
-    return tf.saved_model.load(MODEL_DIR_PATH)
+def load_model(model_path=None):
+    from nighthawk.model_manager import resolve_model
+    resolved = resolve_model(model_path=model_path)
+    return tf.saved_model.load(resolved.saved_model_dir)
 
 
 def get_samples():

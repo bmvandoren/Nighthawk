@@ -728,6 +728,16 @@ def _load_bundle(
                 f"Taxonomy file not found: {path} (role={role!r})"
             )
 
+    # Optional extras: not declared in the layout, but present opportunistically.
+    # species_lookup_table.csv is a per-taxonomy subset of the GBIF/eBird
+    # species-candidate lookup table (built by subset_lookup_for_taxonomy.py in
+    # nighthawk-training).  Absent in older bundles — callers must guard with
+    # resolved.taxonomy.get('species_lookup').
+    if "species_lookup" not in taxonomy:
+        sl = tax_dir / "species_lookup_table.csv"
+        if sl.exists():
+            taxonomy["species_lookup"] = sl
+
     # Resolve test_config paths.
     tc_layout = layout["test_config"]
     tc_dir = bundle_dir / tc_layout["dir"]

@@ -640,7 +640,8 @@ def run_model_on_file(audio_model,
                      postprocess_retain_only_overlaps=True, # only does something if postprocess_merge_overlaps=True
                      mask_output_ap_threshold=None,
                       test_set_performance_dir=None,
-                      return_tax_level_detections=False
+                      return_tax_level_detections=False,
+                     location_candidates=None
                      ):
     
     if not quiet:
@@ -718,12 +719,23 @@ def run_model_on_file(audio_model,
             
     else:
         if not quiet:
-            print("NOTE: making unvalidated taxon predictions, likely because --ap-mask is 0 or test_config file is missing") 
+            print("NOTE: making unvalidated taxon predictions, likely because --ap-mask is 0 or test_config file is missing")
 
         subselect_species = species
         subselect_group = groups
         subselect_family = families
-        subselect_order = orders            
+        subselect_order = orders
+
+    # Geographic candidate filter (--lat/--lon/--month).  Intersects the
+    # subselect lists with the species-candidate lookup for this location and
+    # month, exactly as the ap-mask block does.  A taxon absent from the
+    # location candidates is removed from the subselect list and therefore
+    # never produces a detection — no post-hoc row filtering needed.
+    if location_candidates is not None:
+        subselect_species = [x for x in subselect_species if x in location_candidates.get('species', set())]
+        subselect_group   = [x for x in subselect_group   if x in location_candidates.get('group',   set())]
+        subselect_family  = [x for x in subselect_family  if x in location_candidates.get('family',  set())]
+        subselect_order   = [x for x in subselect_order   if x in location_candidates.get('order',   set())]
 
     which_spp = [i in subselect_species for i in species]
     which_grp = [i in subselect_group for i in groups]

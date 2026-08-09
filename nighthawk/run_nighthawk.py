@@ -23,7 +23,12 @@ def main():
         model_path=args.model_path,
         model_repo_url=args.model_repo_url,
         cache_dir=args.cache_dir,
-        offline=args.offline)
+        offline=args.offline,
+        lat=args.lat,
+        lon=args.lon,
+        month=args.month,
+        lookup_radius_km=args.lookup_radius_km,
+        lookup_min_count=args.lookup_min_count)
 
 def _parse_args():
     
@@ -189,6 +194,56 @@ def _parse_args():
         action=BooleanOptionalAction,
         default=False)
 
+    # Geographic candidate filter (species-candidate lookup).
+    # All three of --lat, --lon, --month must be provided together to activate
+    # filtering; omitting any one of them disables it (no-op, same output as
+    # running without coordinates).
+    parser.add_argument(
+        '--lat',
+        help=(
+            'WGS84 decimal-degree latitude of the recording location. '
+            'Activates geographic species-candidate filtering when supplied '
+            'together with --lon and --month (requires model bundle to include '
+            'a species lookup table).'),
+        type=float,
+        default=None)
+
+    parser.add_argument(
+        '--lon',
+        help='WGS84 decimal-degree longitude of the recording location.',
+        type=float,
+        default=None)
+
+    parser.add_argument(
+        '--month',
+        help=(
+            'Calendar month of the recording (1–12). '
+            'Used together with --lat/--lon for geographic candidate filtering.'),
+        type=_parse_month,
+        default=None)
+
+    parser.add_argument(
+        '--lookup-radius-km',
+        help=(
+            'Neighbourhood pooling radius in km for the species-candidate '
+            'lookup (great-circle distance from the query point to each cell '
+            'centre). Larger values pool more cells and produce a more '
+            'permissive candidate list. (default: 200 km — a conservative '
+            'single-night NFC displacement)'),
+        dest='lookup_radius_km',
+        type=float,
+        default=200.0)
+
+    parser.add_argument(
+        '--lookup-min-count',
+        help=(
+            'Minimum pooled eBird record count for a taxon to be included in '
+            'the candidate list. Applied to the sum across all cells within '
+            '--lookup-radius-km. (default: 1 — essentially unfiltered)'),
+        dest='lookup_min_count',
+        type=int,
+        default=1)
+
     return parser.parse_args()
 
 
@@ -229,6 +284,21 @@ def _handle_threshold_error(value):
         f'Bad detection threshold "{value}". Threshold must be '
         f'a number in the range [0, 100].')
 
+
+
+def _parse_month(value):
+
+    try:
+        month = int(value)
+    except Exception:
+        raise ArgumentTypeError(
+            f'Bad month "{value}". Month must be an integer in [1, 12].')
+
+    if month < 1 or month > 12:
+        raise ArgumentTypeError(
+            f'Bad month "{value}". Month must be in the range [1, 12].')
+
+    return month
 
 
 def _parse_ap_mask(value):

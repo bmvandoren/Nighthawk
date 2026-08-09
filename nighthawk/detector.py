@@ -59,7 +59,12 @@ def run_detector_on_files(
         model_path=None,
         model_repo_url=DEFAULT_MODEL_REPO_URL,
         cache_dir=None,
-        offline=False):
+        offline=False,
+        lat=None,
+        lon=None,
+        month=None,
+        lookup_radius_km=200.0,
+        lookup_min_count=1):
 
     input_file_paths = _expand_paths(input_file_paths)
     file_count = len(input_file_paths)
@@ -91,6 +96,36 @@ def run_detector_on_files(
     print('Getting detector configuration file paths...')
     config_file_paths = _get_configuration_file_paths(resolved)
 
+    # Geographic candidate filter: if lat/lon/month are all provided, build
+    # the per-level candidate sets once (before the file loop) so the lookup
+    # table is only read from disk once regardless of how many files are run.
+    location_candidates = None
+    if lat is not None and lon is not None and month is not None:
+        if config_file_paths.species_lookup is not None:
+            from nighthawk import species_lookup as _sl
+            if not quiet:
+                print(f'Building location candidate list for '
+                      f'({lat}, {lon}) month={month} '
+                      f'radius={lookup_radius_km} km...')
+            location_candidates = _sl.get_candidates(
+                config_file_paths.species_lookup,
+                lat, lon, month,
+                radius_km=lookup_radius_km,
+                min_count=lookup_min_count,
+            )
+            if not quiet:
+                n = sum(len(v) for v in location_candidates.values())
+                print(f'  {n} candidate taxa '
+                      f'({len(location_candidates["species"])} species, '
+                      f'{len(location_candidates["group"])} groups, '
+                      f'{len(location_candidates["family"])} families, '
+                      f'{len(location_candidates["order"])} orders)')
+        else:
+            print('[nighthawk] WARNING: --lat/--lon/--month supplied but this '
+                  'model bundle does not include a species lookup table. '
+                  'Geographic filtering is skipped. '
+                  'Run subset_lookup_for_taxonomy.py to generate one.')
+
     for i, input_file_path in enumerate(input_file_paths):
 
         # Make sure input file path is absolute for messages.
@@ -106,7 +141,7 @@ def run_detector_on_files(
         detections, detect_df_dict = _run_detector_on_file(
             input_file_path, model, config_file_paths, hop_size, threshold,
             merge_overlaps, drop_uncertain, mask_ap_threshold, return_tax_level_detections,
-            do_calibration, quiet, batch_size)
+            do_calibration, quiet, batch_size, location_candidates=location_candidates)
 
         # For sub-1s recordings, write the zero-padded clip so the user can
         # hear exactly what the model analyzed.
@@ -190,6 +225,10 @@ def _get_configuration_file_paths(resolved):
     paths.orders            = tax['orders']
     paths.ebird_taxonomy    = tax['ebird_taxonomy']
     paths.group_ebird_codes = tax['group_ebird_codes']
+    # Optional: GBIF/eBird species-candidate lookup table, subset to this
+    # taxonomy's taxa.  None when the bundle doesn't include one — callers
+    # must guard.  Built by subset_lookup_for_taxonomy.py in nighthawk-training.
+    paths.species_lookup    = tax.get('species_lookup')
 
     tc = resolved.test_config
     paths.config                  = tc['config']
@@ -244,7 +283,7 @@ def _resolve_drop_uncertain_for_file(audio_file_path, hop_size, drop_uncertain, 
 def _run_detector_on_file(
         audio_file_path, model, paths, hop_size, threshold, merge_overlaps,
         drop_uncertain,mask_ap_threshold,return_tax_level_detections,do_calibration,
-        quiet, batch_size=DEFAULT_BATCH_SIZE):
+        quiet, batch_size=DEFAULT_BATCH_SIZE, location_candidates=None):
 
     p = paths
 
@@ -294,7 +333,8 @@ def _run_detector_on_file(
         postprocess_retain_only_overlaps=drop_uncertain,
         mask_output_ap_threshold=mask_ap_threshold,
         test_set_performance_dir=p.test_set_performance,
-        return_tax_level_detections=return_tax_level_detections)
+        return_tax_level_detections=return_tax_level_detections,
+        location_candidates=location_candidates)
 
 
 def _get_model_predictions(

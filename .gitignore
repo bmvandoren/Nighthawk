@@ -9,3 +9,4 @@ instructions/feedback/*.html
 nighthawk/model_load_from_saved.ipynb
 .Rhistory
 install_different_model.txt
+nighthawk/taxonomy/species_lookup_table.csv

@@ -129,7 +129,8 @@ python -m nh2.package_detector \
     --out-dir /home/vandoren/projects/nighthawk/experiments/classify-342-americas/package \
     --model-name americas \
     --model-version 0.2.0-342 \
-    --export-name export_ema
+    --export-name export_ema \
+    --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv
 ```
 
 This writes the payload to `--out-dir` (for local testing) and creates:
@@ -156,22 +157,54 @@ nighthawk Nighthawk-repo/test_inputs/test1.wav \
 ### Step 3: Publish to S3
 
 ```bash
+# Public HTTPS repo
 python -m nh2.package_detector \
     --experiment-dir /home/vandoren/projects/nighthawk/experiments/classify-342-americas \
     --out-dir /home/vandoren/projects/nighthawk/experiments/classify-342-americas/package \
     --model-name americas \
     --model-version 0.2.0-342 \
     --export-name export_ema \
+    --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv \
+    --eval-subdir test57-20260513-1-selectv8-NHM-Americas-Chicago-Mexico-Canada-MPG \
     --publish \
     --repo-url https://nighthawk-models.s3.us-east-1.amazonaws.com/ \
     --bucket nighthawk-models \
     --region us-east-1
+
+# Private S3 repo
+python -m nh2.package_detector \
+    --experiment-dir /home/vandoren/projects/nighthawk/experiments/classify-342-americas \
+    --out-dir /home/vandoren/projects/nighthawk/experiments/classify-342-americas/package \
+    --model-name americas \
+    --model-version 0.2.0-342 \
+    --export-name export_ema \
+    --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv \
+    --eval-subdir test57-20260513-1-selectv8-NHM-Americas-Chicago-Mexico-Canada-MPG \
+    --publish \
+    --repo-url s3://nfc-util/nighthawk-models/ \
+    --bucket nfc-util \
+    --s3-prefix nighthawk-models/ \
+    --region us-east-1
 ```
 
 This:
-1. Uploads the tarball and sidecar manifest under `models/americas/`.
-2. Downloads `registry.json`, merges the new entry, re-uploads it.
+1. Uploads the tarball and sidecar manifest under the configured `--s3-prefix`.
+2. Downloads `registry.json` from the repo URL, merges the new entry, re-uploads it.
 3. Sets `americas.latest = "0.2.0-342"` (suppress with `--no-set-latest`).
+
+**`--eval-subdir`**: name of the test-set subdirectory under `eval/` (e.g.
+`test57-20260513-1-selectv8-NHM-Americas-Chicago-Mexico-Canada-MPG`).  When there
+is exactly one subdirectory it is auto-detected; pass this flag when there are
+multiple to select the right one.
+
+**`--lookup-table`**: path to the full GBIF/eBird species-candidate lookup table
+CSV (built by
+`nighthawk-training/acquire_gbif_data/scripts/build_species_lookup.py`).  When
+provided, `subset_lookup_for_taxonomy.py` is run to generate
+`taxonomy/species_lookup_table.csv` inside the bundle, which enables geographic
+candidate filtering (`--lat`/`--lon`/`--month`) at inference time.  Omitting it
+produces a warning and the table is excluded — re-run packaging with
+`--lookup-table` to add it later.
 
 **`--force`**: required if you are re-publishing an existing `(name, version)`.  Without it,
 the script refuses to overwrite an already-published version (protects reproducibility).
@@ -226,17 +259,32 @@ python -m nh2.package_detector \
     --model-version 0.1.0-322 \
     --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv
 
-# Build + publish to S3
+# Build + publish to S3 - PUBLIC REPO
 python -m nh2.package_detector \
     --legacy \
     --bundle-dir /data/nighthawk/experiments/322-americas/final_model/packaged_model \
     --out-dir /data/nighthawk/experiments/322-americas/final_model/package \
     --model-name americas \
     --model-version 0.1.0-322 \
-    --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv \    
+    --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv \
     --publish \
     --repo-url https://nighthawk-models.s3.us-east-1.amazonaws.com/ \
     --bucket nighthawk-models \
+    --region us-east-1 \
+    --no-set-latest
+
+# Build + publish to S3 - PRIVATE REPO with S3 URI
+python -m nh2.package_detector \
+    --legacy \
+    --bundle-dir /data/nighthawk/experiments/322-americas/final_model/packaged_model \
+    --out-dir /data/nighthawk/experiments/322-americas/final_model/package \
+    --model-name americas \
+    --model-version 0.1.0-322 \
+    --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv \
+    --publish \
+    --repo-url s3://nfc-util/nighthawk-models/ \
+    --bucket nfc-util \
+    --s3-prefix nighthawk-models/ \
     --region us-east-1 \
     --no-set-latest
 ```
@@ -254,11 +302,14 @@ checking the SavedModel's signature.
 | `--bundle-dir` | Path to assembled bundle tree (required with `--legacy`) |
 | `--model-name` | Registry key (e.g. `americas`) |
 | `--model-version` | Artifact version (e.g. `0.4.0`) |
+| `--eval-subdir` | Test-set subdirectory under `eval/` (auto-detected when only one exists) |
+| `--lookup-table` | Path to full GBIF/eBird species-candidate lookup CSV; generates `taxonomy/species_lookup_table.csv` in the bundle enabling `--lat`/`--lon`/`--month` filtering at inference time |
+| `--subset-script` | Path to `subset_lookup_for_taxonomy.py` (auto-detected; only needed for non-standard workspace layouts) |
 | `--publish` | Trigger the S3 upload + registry update |
-| `--repo-url` | Public base URL of the bucket |
+| `--repo-url` | Root URL of the model repository (`https://` or `s3://`); `registry.json` lives here |
 | `--bucket` | S3 bucket name |
 | `--region` | AWS region (default: inferred from env) |
-| `--s3-prefix` | S3 key prefix (default: `models/`) |
+| `--s3-prefix` | S3 key prefix for artifact objects; must begin with the path component of `--repo-url` for `s3://` repos |
 | `--force` | Overwrite an existing version in the registry |
 | `--no-set-latest` | Don't advance the `latest` pointer |
 | `--package-min-version` | Minimum `nighthawk` client version required |

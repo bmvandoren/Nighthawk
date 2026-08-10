@@ -169,6 +169,37 @@ def test_load_bundle_legacy_no_manifest(tmp_path):
     assert resolved.saved_model_dir.exists()
 
 
+def test_load_bundle_legacy_no_manifest_no_requested_name_falls_back_to_model_id(tmp_path):
+    """With no --model given (requested_name=None), the true model identity
+    should come from model_id.txt inside the bundle, not silently default to
+    a caller-unrelated placeholder (e.g. a CLI's own --model default)."""
+    bundle = _make_bundle_dir(tmp_path)
+    (bundle / "manifest.json").unlink()
+    (bundle / "saved_model_with_preprocessing" / "model_id.txt").write_text("322-americas\n")
+    resolved = _load_bundle(bundle, source="local-dir")
+    assert resolved.name == "322-americas"
+    assert resolved.version == "unknown"
+
+
+def test_load_bundle_legacy_no_manifest_no_model_id_falls_back_to_unknown(tmp_path):
+    """No manifest.json, no model_id.txt, no requested_name -> "unknown",
+    same as before this fallback existed (never silently mislabels)."""
+    bundle = _make_bundle_dir(tmp_path)
+    (bundle / "manifest.json").unlink()
+    resolved = _load_bundle(bundle, source="local-dir")
+    assert resolved.name == "unknown"
+    assert resolved.version == "unknown"
+
+
+def test_load_bundle_legacy_no_manifest_requested_name_overrides_model_id(tmp_path):
+    """An explicit --model always wins over the bundle's own model_id.txt."""
+    bundle = _make_bundle_dir(tmp_path)
+    (bundle / "manifest.json").unlink()
+    (bundle / "saved_model_with_preprocessing" / "model_id.txt").write_text("322-americas\n")
+    resolved = _load_bundle(bundle, source="local-dir", requested_name="explicit-override")
+    assert resolved.name == "explicit-override"
+
+
 # ---------------------------------------------------------------------------
 # _verify_sha256
 # ---------------------------------------------------------------------------

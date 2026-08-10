@@ -793,6 +793,24 @@ _LEGACY_LAYOUT: dict[str, Any] = {
 }
 
 
+def _read_legacy_model_id(bundle_dir: Path, layout: dict) -> str | None:
+    """Best-effort model identifier for a legacy (no-manifest) bundle.
+
+    Legacy bundles (as produced by install_model.sh from our private S3
+    buckets) carry a model_id.txt inside the SavedModel directory recording
+    the true model name/version (e.g. "322-americas") -- this is the same
+    identifier install_model.sh itself echoes as "Model version installed:
+    ...". Used only as a display fallback when the caller didn't pass an
+    explicit --model; never affects which files actually get loaded.
+    """
+    model_id_path = bundle_dir / layout["saved_model"] / "model_id.txt"
+    try:
+        model_id = model_id_path.read_text().strip()
+    except OSError:
+        return None
+    return model_id or None
+
+
 def _load_bundle(
     bundle_dir: Path,
     source: str,
@@ -814,7 +832,7 @@ def _load_bundle(
     else:
         # Legacy fallback: classic dir layout, no manifest.
         layout = _LEGACY_LAYOUT
-        name = requested_name or "unknown"
+        name = requested_name or _read_legacy_model_id(bundle_dir, layout) or "unknown"
         version = requested_version or "unknown"
         print(
             f"[nighthawk] No manifest.json found in bundle; using legacy layout "

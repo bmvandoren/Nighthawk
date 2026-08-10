@@ -144,18 +144,21 @@ def _parse_args():
         '--model',
         help=(
             f'name of the model to use (e.g. "americas", "europe"). '
-            f'(default: {nh.DEFAULT_MODEL_NAME})'),
+            f'Ignored (display-only) when --model-path is given. '
+            f'(default: {nh.DEFAULT_MODEL_NAME}, unless --model-path is given)'),
         dest='model',
-        default=nh.DEFAULT_MODEL_NAME)
+        default=None)
 
     parser.add_argument(
         '--model-version',
         help=(
             f'version of the model to use, or "latest" to auto-select the '
             f'newest published version. Pin a version (e.g. "0.4.0") for '
-            f'reproducible results. (default: {nh.DEFAULT_MODEL_VERSION})'),
+            f'reproducible results. Ignored (display-only) when --model-path '
+            f'is given. (default: {nh.DEFAULT_MODEL_VERSION}, unless '
+            f'--model-path is given)'),
         dest='model_version',
-        default=nh.DEFAULT_MODEL_VERSION)
+        default=None)
 
     parser.add_argument(
         '--model-path',

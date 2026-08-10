@@ -287,6 +287,21 @@ python -m nh2.package_detector \
     --s3-prefix nighthawk-models/ \
     --region us-east-1 \
     --no-set-latest
+
+# publish to private Canada repo
+AWS_PROFILE=birdscanada python -m nh2.package_detector \
+    --legacy \
+    --bundle-dir /data/nighthawk/experiments/322-americas/final_model/packaged_model \
+    --out-dir /data/nighthawk/experiments/322-americas/final_model/package \
+    --model-name americas \
+    --model-version 0.1.0-322 \
+    --lookup-table ~/projects/nighthawk/nighthawk-training/acquire_gbif_data/data/species_lookup_table.csv \
+    --publish \
+    --repo-url s3://nfc-util-canada/nighthawk-models/ \
+    --bucket nfc-util-canada \
+    --s3-prefix nighthawk-models/ \
+    --region us-east-1 \
+    --no-set-latest       
 ```
 
 The resulting `manifest.json` records `"model_type": "legacy"`, which tells the
@@ -485,6 +500,12 @@ nighthawk-models clean americas --model-version 0.3.1
 
 # Remove all cached versions of a model
 nighthawk-models clean americas
+
+# Use private repo
+nighthawk-models list --remote --repo-url s3://nfc-util/nighthawk-models/
+
+# Use private repo with non-default AWS profile
+AWS_PROFILE=birdscanada nighthawk-models list --remote --repo-url s3://nfc-util-canada/nighthawk-models/
 ```
 
 ### Typical `list --remote` output
